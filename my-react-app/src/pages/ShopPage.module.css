@@ -1,0 +1,591 @@
+.container {
+  font-family: 'Inter', sans-serif;
+  color: #333;
+  background-color: #fff;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* --- Utility --- */
+.btnPrimary {
+  background-color: #ffcc00;
+  color: #000;
+  border: none;
+  padding: 10px 25px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.btnPrimary:hover {
+  background-color: #e6b800;
+}
+
+/* --- Header --- */
+.header {
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  border-bottom: 1px solid #333;
+}
+
+.logo {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffcc00;
+  letter-spacing: -1px;
+}
+
+.searchBar {
+  display: flex;
+  flex: 1;
+  max-width: 500px;
+  margin: 0 40px;
+}
+
+.searchBar input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 4px 0 0 4px;
+  outline: none;
+}
+
+.searchBar button {
+  background-color: #ffcc00;
+  border: none;
+  padding: 0 25px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.userActions {
+  display: flex;
+  gap: 30px;
+}
+
+.contact, .account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.iconYellow {
+  color: #ffcc00;
+  font-size: 20px;
+}
+
+/* Navigation */
+.navBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  background-color: #222;
+  height: 55px;
+}
+
+.categoryBtn {
+  background: transparent;
+  color: #ffcc00;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+.navLinks {
+  display: flex;
+  list-style: none;
+  gap: 40px;
+  margin: 0;
+  padding: 0;
+}
+
+.navLinks li {
+  color: #ccc;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.navLinks li:hover {
+  color: #fff;
+}
+
+.cart {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffcc00;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.cartInfo {
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* --- Hero --- */
+.hero {
+  position: relative;
+  background-color: #f0f0f0;
+  height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 80px;
+  overflow: hidden;
+}
+
+.heroContent {
+  z-index: 2;
+  max-width: 500px;
+}
+
+.heroContent h4 {
+  color: #666;
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.heroContent h1 {
+  font-size: 56px;
+  margin: 0 0 30px 0;
+  line-height: 1.1;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.heroImage {
+  max-height: 400px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15)); 
+}
+
+/* --- Section Common --- */
+.section {
+  padding: 60px 30px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+}
+
+.sectionHeader h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.arrows button {
+  background: #333;
+  color: #fff;
+  border: none;
+  width: 35px;
+  height: 35px;
+  margin-left: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.arrows button:hover {
+  background-color: #ffcc00;
+  color: #000;
+}
+
+/* --- Categories --- */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
+}
+
+.categoryCard {
+  border: 1px solid #eee;
+  padding: 30px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.3s;
+  background-color: #fff;
+}
+
+.categoryCard:hover {
+  border-color: #ffcc00;
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.catIcon {
+  font-size: 45px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.categoryCard p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* --- Banners --- */
+.bannerGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px;
+  color: #fff;
+  overflow: hidden;
+  height: 280px;
+  position: relative;
+}
+
+.bannerDark { background-color: #1a1a1a; }
+.bannerRed { background-color: #d32f2f; }
+
+/* New blue banner style for the third slide */
+.bannerBlue { background-color: #0057b8; }
+
+.bannerText {
+  z-index: 2;
+  position: relative;
+}
+
+.bannerText span {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.bannerText h2 {
+  font-size: 36px;
+  margin: 10px 0 25px 0;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.banner img {
+  max-width: 250px;
+  z-index: 1;
+  transform: scale(1.1);
+  transition: 0.3s;
+}
+
+.banner:hover img {
+  transform: scale(1.15) rotate(-2deg);
+}
+
+/* --- Features Bar --- */
+.featuresBar {
+  background-color: #1a1a1a;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  padding: 40px 60px;
+  margin: 40px 30px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.featureIcon {
+  font-size: 36px;
+  color: #ffcc00;
+}
+
+.featureItem div strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.featureItem div small {
+  color: #999;
+  font-size: 13px;
+}
+
+/* --- Products --- */
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 25px;
+}
+
+.productCard {
+  border: 1px solid #eee;
+  padding: 20px;
+  transition: 0.3s;
+  background: #fff;
+  position: relative;
+}
+
+.productCard:hover {
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  border-color: #ddd;
+}
+
+.productImageWrapper {
+  position: relative;
+  text-align: center;
+  margin-bottom: 20px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.productImageWrapper img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #d32f2f;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 2px;
+  z-index: 2;
+}
+
+.productInfo {
+  text-align: left;
+}
+
+.rating {
+  color: #ffcc00;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.productInfo h4 {
+  margin: 0;
+  font-size: 15px;
+  color: #333;
+  font-weight: 600;
+  height: 40px;
+  overflow: hidden;
+}
+
+.priceRow {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.oldPrice {
+  text-decoration: line-through;
+  color: #999;
+  margin-right: 12px;
+  font-size: 14px;
+}
+
+.price {
+  font-weight: 700;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+/* =========================================
+   Mobile Responsive Styles (Max-width 768px)
+   ส่วนที่เพิ่มเข้ามาใหม่สำหรับการแสดงผลบนมือถือ
+========================================= */
+@media (max-width: 768px) {
+  /* ปรับ Container หลัก */
+  .container {
+      max-width: 100%;
+      overflow-x: hidden; /* ป้องกันการเลื่อนแนวนอน */
+  }
+
+  /* --- Header Mobile --- */
+  .topBar {
+      flex-direction: column; /* เรียงแนวตั้ง */
+      gap: 15px;
+      padding: 15px;
+  }
+
+  .searchBar {
+      margin: 0;
+      width: 100%;
+      max-width: none;
+      order: 2; /* ย้าย Search มาไว้ใต้โลโก้ */
+  }
+
+  .logo {
+      order: 1;
+  }
+
+  .userActions {
+      order: 3;
+      width: 100%;
+      justify-content: space-around; /* จัดระยะห่าง Contact/Account */
+      gap: 10px;
+  }
+  
+  .contact span, .account span {
+      display: none; /* ซ่อนข้อความบนมือถือ เหลือแต่เบอร์/ปุ่ม */
+  }
+
+  /* Navbar Mobile */
+  .navBar {
+      height: auto;
+      flex-direction: column;
+      padding: 10px 15px;
+      gap: 15px;
+  }
+
+  .navLinks {
+      display: none; /* ซ่อนเมนูลิ้งค์ (ปกติจะต้องมีปุ่ม Hamburger มาเปิด) */
+  }
+
+  .cart, .categoryBtn {
+      width: 100%;
+      justify-content: center; /* จัดกึ่งกลางปุ่ม */
+      padding: 10px 0;
+  }
+  .cart {
+      background-color: #333; /* เพิ่มพื้นหลังให้ Cart ชัดขึ้น */
+      border-radius: 4px;
+  }
+
+  /* --- Hero Section Mobile --- */
+  .hero {
+      height: auto;
+      flex-direction: column-reverse; /* เอารูปขึ้นก่อนข้อความ */
+      padding: 30px 15px;
+      text-align: center;
+  }
+
+  .heroContent {
+      max-width: 100%;
+      margin-top: 20px;
+  }
+
+  .heroContent h1 {
+      font-size: 32px; /* ลดขนาดฟอนต์หัวข้อใหญ่ */
+  }
+
+  .heroImage {
+      max-height: 250px; /* ลดขนาดรูป */
+      margin-bottom: 20px;
+  }
+
+  /* --- Section Common Mobile --- */
+  .section {
+      padding: 40px 15px; /* ลด Padding ของ Section */
+  }
+
+  /* --- Categories Grid Mobile --- */
+  .categoryGrid {
+      grid-template-columns: repeat(3, 1fr); /* เหลือ 3 คอลัมน์ */
+      gap: 10px;
+  }
+  .catIcon {
+    font-size: 35px;
+  }
+  .categoryCard {
+      padding: 20px 5px;
+  }
+
+  /* --- Banners Grid Mobile --- */
+  .bannerGrid {
+      grid-template-columns: 1fr; /* เหลือ 1 คอลัมน์ เรียงตั้ง */
+  }
+
+  .banner {
+      height: auto;
+      flex-direction: column;
+      text-align: center;
+      padding: 30px 20px;
+  }
+
+  .banner img {
+      margin-top: 25px;
+      max-width: 80%; /* ให้รูปไม่ใหญ่เกินไป */
+      transform: none !important; /* ปิด Effect เอียงรูปตอน Hover ในมือถือ */
+  }
+  .bannerText h2 {
+      font-size: 28px;
+  }
+
+  /* --- Features Bar Mobile --- */
+  .featuresBar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 25px;
+      padding: 30px 20px;
+      margin: 20px 0;
+  }
+
+  /* --- Products Grid Mobile --- */
+  .productGrid {
+      grid-template-columns: repeat(2, 1fr); /* เหลือ 2 คอลัมน์ */
+      gap: 15px;
+  }
+  
+  .productImageWrapper {
+      height: 140px; /* ลดความสูงกรอบรูปสินค้า */
+  }
+
+  .productInfo h4 {
+      font-size: 14px;
+      height: auto; /* ปล่อยให้ความสูงยืดตามข้อความ */
+      max-height: 40px;
+  }
+}
+
+/* สำหรับหน้าจอเล็กมากๆ (เช่น iPhone SE) */
+@media (max-width: 480px) {
+    .categoryGrid {
+      grid-template-columns: repeat(2, 1fr); /* หมวดหมู่เหลือ 2 คอลัมน์ */
+    }
+}

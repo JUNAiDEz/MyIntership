@@ -1,0 +1,621 @@
+/* ProductManagementPage.module.css */
+
+/* --- 🎨 1. CSS Variables (ชุดสีและธีม) --- */
+:root {
+  --primary-color: #6d28d9;
+  --primary-hover: #5b21b6;
+  --primary-light: #f3e8ff;
+  --danger-color: #dc2626;
+  --danger-light: #fee2e2;
+
+  --bg-color: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7281;
+  --border-color: #e5e7eb;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --transition: all 0.2s ease-in-out;
+}
+
+/* --- 📦 2. Layout & Page Container --- */
+.content {
+  background-color: var(--bg-color);
+  padding: 32px;
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+.productHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.contentTitle {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* --- 🔳 3. Buttons --- */
+.addButton {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.addButton:hover {
+  background-color: var(--primary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.actionButton,
+.actionButtonDelete {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  margin-right: 8px;
+  padding: 8px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+.actionButton {
+  color: var(--primary-color);
+}
+.actionButton:hover {
+  background-color: var(--primary-light);
+}
+.actionButtonDelete {
+  color: var(--danger-color);
+}
+.actionButtonDelete:hover {
+  background-color: var(--danger-light);
+}
+
+/* --- 📜 4. Table --- */
+.productTable {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--card-bg);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.productTable th,
+.productTable td {
+  padding: 16px 24px;
+  text-align: left;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+.productTable th {
+  background-color: #f9fafb;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  border-bottom-width: 2px;
+}
+.productTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.productTableImage {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 2px solid white;
+  box-shadow: var(--shadow-sm);
+}
+
+.errorMessage {
+  color: var(--danger-color);
+  font-weight: 600;
+  background-color: var(--danger-light);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--danger-color);
+  margin-top: 12px;
+}
+
+/* --- 🖼️ 5. Modal --- */
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 40px 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modalContent {
+  background-color: var(--card-bg);
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 640px; /* Slightly wider modal for Add/Edit */
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  margin: 0 auto;
+  animation: slideUp 0.4s ease-out;
+}
+
+/* ✨ (NEW) Large Modal for Promotion */
+.modalLarge {
+    max-width: 960px; /* กว้างขึ้นสำหรับ Promotion */
+}
+
+.modalContent h2,
+.modalContent h3 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 12px;
+}
+
+/* --- ✍️ 6. Form Elements --- */
+.formGroup {
+  margin-bottom: 20px;
+}
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="number"],
+.formGroup input[type="file"],
+.formGroup input[type="datetime-local"],
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  background-color: #f9fafb;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  transition: var(--transition);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* Fallback for specific modal forms */
+.modalContent form input[type="text"],
+.modalContent form input[type="number"],
+.modalContent form input[type="file"],
+.modalContent form select,
+.modalContent form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  background-color: #fbfbfd;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background-color: var(--card-bg);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.formGroup input[type="file"] {
+  padding: 8px;
+}
+.formGroup input[type="file"]::file-selector-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  margin-right: 12px;
+  transition: var(--transition);
+}
+.formGroup input[type="file"]::file-selector-button:hover {
+  background-color: var(--primary-hover);
+}
+
+.formImagePreview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-top: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 0px;
+}
+
+.btnPrimary,
+.btnSecondary {
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btnPrimary {
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+.btnPrimary:hover {
+  background-color: var(--primary-hover);
+  box-shadow: var(--shadow-md);
+}
+.btnSecondary {
+  background-color: white;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+.btnSecondary:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+.btnPrimary:disabled,
+.btnSecondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- 🌟 7. Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 🌟 8. Layout 2 คอลัมน์ (Promotion Form) --- */
+.formBody {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin-bottom: 20px;
+}
+.formColumnLeft,
+.formColumnRight {
+  flex: 1;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+}
+.formRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.formGroup textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* --- 🌟 9. ปุ่ม Action และ Status --- */
+.actionButtonView {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  margin-right: 8px;
+  padding: 8px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: #0ea5e9;
+}
+.actionButtonView:hover {
+  background-color: #e0f2fe;
+}
+
+.actionButtonToggleOn,
+.actionButtonToggleOff {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.3rem;
+  margin-right: 8px;
+  padding: 8px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+.actionButtonToggleOn {
+  color: #22c55e;
+}
+.actionButtonToggleOn:hover {
+  background-color: #f0fdf4;
+}
+.actionButtonToggleOff {
+  color: #6b7281;
+}
+.actionButtonToggleOff:hover {
+  background-color: #f3f4f6;
+}
+
+.actionButtonPopularOn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  margin-right: 8px;
+  padding: 8px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: #f6c400;
+}
+.actionButtonPopularOff {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.1rem;
+    margin-right: 8px;
+    padding: 8px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    color: var(--text-secondary);
+}
+.actionButtonPopularOn:hover,
+.actionButtonPopularOff:hover {
+    background-color: #f3f4f6;
+}
+
+.statusActive,
+.statusInactive {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.statusActive {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.statusInactive {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+/* Toggle switch */
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.toggleSwitch input { opacity: 0; width: 0; height: 0; }
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #d1d5db;
+  border-radius: 20px;
+  transition: background 0.18s ease;
+}
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  top: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
+.toggleSwitch input:checked + .toggleSlider { background: var(--primary-color); }
+.toggleSwitch input:checked + .toggleSlider:before { transform: translateX(16px); }
+.toggleSwitch input:disabled + .toggleSlider { opacity: 0.6; cursor: not-allowed; }
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 24px 0;
+}
+
+/* --- 🌟 10. ส่วนจัดการ Item (PROMOTION IMPROVED) --- */
+
+.itemManagementSection {
+  margin-top: 24px;
+  background-color: #fff;
+}
+
+.itemManagementSection h4 {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ✨ (Improved) List Container */
+.itemListContainer {
+  margin-bottom: 20px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px; /* space for shadow */
+}
+
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ✨ (Improved) Item Row as a "Card" */
+.itemList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.itemList li:hover {
+    border-color: var(--primary-light);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    transform: translateY(-1px);
+}
+
+.itemImage {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.itemList li span {
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  margin: 0 16px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemRemoveButton {
+  border: none;
+  background: #fff0f0;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: var(--danger-color);
+  flex-shrink: 0;
+}
+.itemRemoveButton:hover {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+/* ✨ (Improved) Add Item Section */
+.addItemContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  background-color: #f8fafc; /* Light background to distinguish form */
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.addItemForm {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.addItemForm select {
+    background-color: white; /* White input on grey bg */
+    border-color: #cbd5e1;
+}
+
+/* Ensure Add button aligns nicely */
+.addItemContainer .btnPrimary {
+    height: 45px; /* Match roughly with input height + padding */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 24px;
+    white-space: nowrap;
+    margin-bottom: 1px; /* Adjust alignment visual */
+}
+
+/* --- Responsive for Mobile --- */
+@media (max-width: 768px) {
+  .content { padding: 16px; }
+  .productHeader { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .addButton { width: 100%; justify-content: center; }
+  
+  .modalContent, .modalLarge { padding: 20px; margin: 10px; width: auto; }
+  .formBody { flex-direction: column; gap: 16px; }
+  .formColumnLeft, .formColumnRight { min-width: 100%; }
+  
+  .addItemContainer { flex-direction: column; align-items: stretch; padding: 16px; }
+  .addItemContainer .btnPrimary { width: 100%; justify-content: center; }
+  
+  .itemList li { padding: 8px; }
+  .itemImage { width: 40px; height: 40px; }
+  .itemList li span { font-size: 0.85rem; margin: 0 10px; }
+}

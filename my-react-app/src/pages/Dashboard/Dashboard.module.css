@@ -1,0 +1,425 @@
+/* src/pages/Dashboard.module.css */
+
+/* --- 1. Main Page Layout --- */
+.dashboardPage {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f0f2f5; 
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+.contentArea {
+  flex-grow: 1;
+}
+
+/* --- 2. Header (Top Nav) --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2d2d2d;
+  color: white;
+  padding: 0 20px;
+  height: 60px;
+  border-bottom: 3px solid #ffc107;
+}
+.headerLeft, .headerRight {
+  display: flex;
+  align-items: center;
+}
+.headerLeft {
+  min-width: 0; /* (ใหม่!) ป้องกันการบีบตัวของ Flex item */
+}
+.headerRight {
+  flex-shrink: 0; /* (ใหม่!) ป้องกันปุ่ม Logout ฯลฯ ถูกบีบ */
+}
+
+.logoText {
+  font-weight: bold;
+  font-size: 1.5rem;
+  margin-right: 20px;
+}
+.navMenu {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0; /* (ใหม่!) ป้องกันเมนูจากการถูกบีบ */
+}
+.navItem {
+  color: #ccc;
+  text-decoration: none;
+  padding: 0 10px; /* (แก้ไข!) ลด Padding */
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 60px;
+  line-height: 60px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  
+  white-space: nowrap; /* (ใหม่!) ป้องกันข้อความตกบรรทัด */
+  flex-shrink: 0; /* (ใหม่!) ป้องกันปุ่มถูกบีบ */
+}
+.navItem:hover, .navItem.active {
+  color: white;
+  background-color: #444;
+}
+.userLink {
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-right: 15px;
+  white-space: nowrap; /* (ใหม่!) */
+}
+.userAvatar {
+  background-color: #007bff;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 15px;
+}
+.logoutButton {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap; /* (ใหม่!) */
+}
+.logoutButton:hover {
+  background-color: #c82333;
+}
+
+/* --- 3. Content Area (สำหรับหน้า Home) --- */
+.content {
+  max-width: 1600px;
+  margin: 20px auto;
+  padding: 20px;
+  width: 100%;
+}
+.contentTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20px;
+}
+.filterBar {
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.searchBox {
+  display: flex;
+  width: 300px;
+}
+.searchBox input {
+  flex-grow: 1;
+  border: 1px solid #ccc;
+  padding: 8px;
+  border-radius: 4px 0 0 4px;
+}
+.searchBox button {
+  border: none;
+  background-color: #007bff;
+  color: white;
+  padding: 0 12px;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+
+/* --- 4. Main Grid (Left/Right) --- */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 20px;
+}
+.leftColumn, .rightColumn {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.buttonGroup {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.buttonGroup button {
+  flex-grow: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btnRed { background-color: #dc3545; }
+.btnGreen { background-color: #28a745; }
+.btnBlueFull {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px;
+  width: 100%;
+  font-size: 1rem;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+.formSection label {
+  display: block;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+.formSection input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* --- 5. Right Column (Home) --- */
+.alertBox {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+.alertBox strong {
+  font-size: 1.1rem;
+  color: #856404;
+}
+.alertBox p {
+  margin: 5px 0;
+  font-weight: bold;
+}
+.alertWarning {
+  color: #dc3545;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+.orderTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.orderTable th, .orderTable td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-size: 0.9rem;
+}
+.orderTable th {
+  background-color: #f8f9fa;
+  text-align: left;
+}
+.orderTable tfoot td {
+  font-weight: bold;
+}
+.textRight { text-align: right; }
+.textRed { color: #dc3545; }
+
+/* --- 6. Footer --- */
+.footer {
+  background-color: #2d2d2d;
+  color: #888;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+/* --- Responsive (Simple) --- */
+@media (max-width: 1200px) {
+  .navMenu {
+    display: none; 
+  }
+}
+
+@media (max-width: 992px) {
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Responsive สำหรับ Mobile (< 768px) --- */
+@media (max-width: 768px) {
+  .dashboardPage {
+    font-size: 12px;
+  }
+
+  .header {
+    padding: 0 12px;
+    height: 50px;
+    flex-wrap: wrap;
+  }
+
+  .logoText {
+    font-size: 1.1rem;
+    margin-right: 10px;
+  }
+
+  .headerLeft,
+  .headerRight {
+    flex-wrap: wrap;
+  }
+
+  .navMenu {
+    display: none;
+  }
+
+  .navItem {
+    padding: 0 6px;
+    font-size: 0.8rem;
+    gap: 4px;
+  }
+
+  .userLink {
+    font-size: 0.8rem;
+    margin-right: 10px;
+  }
+
+  .userAvatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+    margin-right: 10px;
+  }
+
+  .logoutButton {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .content {
+    margin: 15px auto;
+    padding: 15px;
+  }
+
+  .contentTitle {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+  }
+
+  .filterBar {
+    padding: 12px;
+    margin-bottom: 15px;
+  }
+
+  .searchBox {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .searchBox input,
+  .searchBox button {
+    font-size: 0.85rem;
+    padding: 6px;
+  }
+
+  .mainGrid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .leftColumn,
+  .rightColumn {
+    padding: 15px;
+  }
+
+  .buttonGroup {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .buttonGroup button {
+    padding: 8px;
+    font-size: 0.85rem;
+  }
+
+  .btnBlueFull {
+    padding: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  .formSection label {
+    font-size: 0.85rem;
+  }
+
+  .formSection input {
+    font-size: 16px;
+    padding: 6px;
+  }
+
+  .alertBox {
+    padding: 12px;
+  }
+
+  .alertBox strong {
+    font-size: 1rem;
+  }
+
+  .tableContainer {
+    overflow-x: auto;
+  }
+
+  .orderTable th,
+  .orderTable td {
+    padding: 6px;
+    font-size: 0.75rem;
+  }
+
+  .footer {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    font-size: 0.7rem;
+  }
+}
+
+/* --- (สไตล์สำหรับ Dropdown ใน Header) --- */
+.navItemDropdownContainer {
+  position: relative;
+}
+.navDropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #2d2d2d;
+  border: 1px solid #444;
+  border-top: none;
+  z-index: 1001;
+  min-width: 100%;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.navDropdownItem {
+  display: block;
+  padding: 10px 15px;
+  color: #ccc;
+  text-decoration: none;
+  font-size: 0.9rem;
+  white-space: nowrap; /* (ใหม่!) */
+}
+.navDropdownItem:hover {
+  background-color: #444;
+  color: white;
+}

@@ -1,0 +1,108 @@
+/* "แถบ" พื้นหลังสีขาว เต็มจอ */
+.carouselSection {
+  background-color: #ffffff;
+  padding: 40px 0;
+  width: 100%;
+}
+
+/* "ตู้" จัดกลาง */
+.carouselContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* --- สไตล์หัวข้อ --- */
+.sectionTitle {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  /* (ทำให้หัวข้อทั้งหมดเป็นตัวหนา/สีดำ) */
+  font-weight: 900;
+  color: #000;
+}
+
+/* (ลบ .titleBold) */
+/*
+.titleBold {
+  ...
+}
+*/
+
+/* (ลบ .titleLight) */
+/*
+.titleLight {
+  ...
+}
+*/
+
+/* วงกลมสีเหลือง (คงไว้) */
+.titleAccent {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background-color: #ffc107;
+  border: 3px solid #fde49a;
+}
+
+/* --- สไตล์ลูกศร (ปรับแต่งของ Slick) --- */
+:global(.slick-prev),
+:global(.slick-next) {
+  background: white !important;
+  border: 1px solid #ccc !important;
+  border-radius: 50% !important;
+  width: 40px !important;
+  height: 40px !important;
+  z-index: 10 !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+:global(.slick-prev:before),
+:global(.slick-next:before) {
+  font-family: 'slick' !important;
+  font-size: 20px !important;
+  color: #000 !important; /* สีลูกศร */
+}
+
+:global(.slick-prev) { left: -20px !important; }
+:global(.slick-next) { right: -20px !important; }
+
+/* --- Responsive สำหรับ Mobile --- */
+@media (max-width: 768px) {
+  .carouselSection {
+    padding: 30px 0;
+  }
+
+  .carouselContainer {
+    padding: 0 12px;
+  }
+
+  .sectionTitle {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+  }
+
+  .titleAccent {
+    width: 12px;
+    height: 12px;
+    border-width: 2px;
+  }
+
+  :global(.slick-prev),
+  :global(.slick-next) {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  :global(.slick-prev:before),
+  :global(.slick-next:before) {
+    font-size: 16px !important;
+  }
+
+  :global(.slick-prev) { left: 0px !important; }
+  :global(.slick-next) { right: 0px !important; }
+}

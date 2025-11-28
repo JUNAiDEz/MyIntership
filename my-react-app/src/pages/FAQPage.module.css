@@ -1,0 +1,29 @@
+.page { padding: 20px }
+.header { margin-bottom: 12px }
+.list { display:flex; flex-direction:column; gap:10px }
+.item { background:#fff; padding:12px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.06) }
+.q { font-weight:600; cursor:pointer }
+.a { margin-top:8px; color:#333 }
+
+@media (max-width: 768px) {
+  .page { 
+    padding: 10px; 
+  }
+  .header { 
+    margin-bottom: 10px; 
+  }
+  .list { 
+    gap: 8px; 
+  }
+  .item { 
+    padding: 10px; 
+    border-radius: 6px;
+  }
+  .q { 
+    font-size: 0.9rem;
+  }
+  .a { 
+    font-size: 0.85rem; 
+    margin-top: 6px;
+  }
+}
