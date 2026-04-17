@@ -14,7 +14,7 @@ const faqRoutes = require('./faq/faq.routes');
 const contactRoutes = require('./contact/contact.routes');
 const carWrapRoutes = require('./carWrap/carWrap.routes');
 const stickerRoutes = require('./stickers');
-const dealersRoutes = require('../routes/dealers.route');
+const dealersRoutes = require('./dealers/dealers.routes');
 
 // 👇 Import Module ใหม่ที่คุณต้องการ
 const servicePreviewRoutes = require('./servicePreview/servicePreview.routes');
