@@ -1,0 +1,228 @@
+/* src/components/LoginModal.module.css */
+
+.modalBackdrop {
+  /* ใช้ Fixed เพื่อยึดติดกับหน้าจอ device โดยตรง */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  
+  /* สีพื้นหลังแบบจางๆ + เบลอ */
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  
+  /* จัดกึ่งกลางด้วย Flexbox */
+  display: flex;
+  align-items: center;     
+  justify-content: center; 
+  
+  /* ค่า Z-Index สูงๆ เพื่อให้ลอยทับทุกอย่าง */
+  z-index: 99999;
+  
+  /* Padding เพื่อไม่ให้กล่องชิดขอบจอเกินไปในมือถือ */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modalBox {
+  position: relative;
+  width: 100%;
+  max-width: 400px; /* ความกว้างสูงสุดใน PC */
+  
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  
+  /* เงาให้ดูลอยขึ้นมา */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  
+  /* ป้องกันการล้นในแนวตั้งกรณีจอเตี้ย */
+  max-height: 90vh;
+  overflow-y: auto;
+  
+  /* Animation ตอนเปิด */
+  animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.96); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+/* --- Form Elements --- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: transparent;
+  padding: 0;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.flex-column > label {
+  color: #151717;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.inputForm {
+  border: 1.5px solid #ecedec;
+  border-radius: 10px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  transition: all 0.2s ease-in-out;
+  background-color: #fff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.inputForm:focus-within {
+  border-color: #2d79f3;
+  box-shadow: 0 0 0 3px rgba(45, 121, 243, 0.1);
+}
+
+.input {
+  margin-left: 10px;
+  border: none;
+  width: 100%;
+  height: 100%;
+  font-size: 14px;
+  outline: none;
+  color: #333;
+  background: transparent;
+}
+
+/* --- Extras (Remember Me, Forgot Pass) --- */
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 5px;
+  width: 100%;
+}
+
+.span {
+  font-size: 13px;
+  color: #2d79f3;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* --- Buttons --- */
+
+.button-submit {
+  margin: 15px 0 10px 0;
+  background-color: #151717;
+  border: none;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  height: 48px;
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.2s;
+}
+
+.button-submit:hover {
+  background-color: #252727;
+}
+
+.button-submit:active {
+  transform: scale(0.98);
+}
+
+.p {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+/* --- Social Login --- */
+
+.dividerContainer {
+  margin: 12px 0;
+  text-align: center;
+  position: relative;
+}
+
+.line {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: #fff;
+  padding: 0 10px;
+}
+
+.btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 500;
+  font-size: 14px;
+  gap: 8px;
+  border: 1px solid #ecedec;
+  background-color: white;
+  cursor: pointer;
+  transition: 0.2s;
+  color: #333;
+}
+
+.btn:hover {
+  background-color: #f9f9f9;
+  border-color: #d1d1d1;
+}
+
+.errorMessage {
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  border: 1px solid #fecaca;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* --- Responsive --- */
+@media (max-width: 480px) {
+  .modalBackdrop {
+    padding: 15px; /* ลด Padding เล็กน้อยเพื่อให้มีที่เหลือ */
+  }
+  
+  .modalBox {
+    margin: 0; /* ล้าง margin */
+    width: 100%;
+  }
+
+  .flex-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .btn {
+    font-size: 13px;
+    padding: 0 5px;
+  }
+}

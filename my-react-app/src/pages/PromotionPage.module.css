@@ -1,0 +1,349 @@
+/* PromotionPage.module.css */
+
+/* --- 1. Global Layout --- */
+.pageWrapper {
+  background-color: #050505; /* พื้นหลังดำ */
+  color: #fff;
+  min-height: 100vh;
+  font-family: 'Kanit', sans-serif;
+  overflow-x: hidden;
+}
+
+.contentWrapper {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+/* --- 2. Hero Banner --- */
+.heroBanner {
+  height: 400px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.6); /* ทำให้ภาพมืดลงหน่อย เพื่อให้ตัวหนังสือเด่น */
+}
+
+/* Overlay ไล่สีดำจากล่างขึ้นบน */
+.heroBanner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, #050505 0%, transparent 100%);
+}
+
+/* --- 3. Section Titles --- */
+.sectionTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  color: #fff;
+  margin: 50px 0 30px;
+  padding-left: 20px;
+  border-left: 5px solid #ffc709; /* ขีดเหลืองด้านหน้า */
+  display: flex;
+  align-items: center;
+}
+
+.sectionTitle span {
+  color: #ffc709;
+  margin-left: 10px;
+}
+
+/* --- 4. Carousel Area (Slider Fixes) --- */
+.popularSection {
+  margin-bottom: 60px;
+}
+
+.carouselWrapper {
+  position: relative;
+  margin: 0 -10px; /* แก้ระยะล้น */
+}
+
+/* --- [สำคัญ] Slick Slider Equal Height Fix --- */
+/* บังคับให้ Track ยืดความสูงให้เท่ากันทุกการ์ด */
+.carouselWrapper :global(.slick-track) {
+  display: flex !important;
+  align-items: stretch;
+}
+
+.carouselWrapper :global(.slick-slide) {
+  height: auto;
+  display: flex;
+  justify-content: center;
+  float: none !important;
+}
+
+/* บังคับให้ div ภายใน slick ยืดเต็มพื้นที่ */
+.carouselWrapper :global(.slick-slide > div) {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.carouselCardWrapper {
+  width: 100%;
+  display: flex; /* ใช้ flex เพื่อให้ .card ข้างในยืดได้ */
+  padding: 0 15px; /* ระยะห่างระหว่างการ์ด */
+  box-sizing: border-box;
+}
+
+/* Custom Arrows (ลูกศรเลื่อนซ้ายขวา) */
+.slickPrevArrow, .slickNextArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 50px;
+  height: 50px;
+  background: rgba(0,0,0,0.8);
+  border: 1px solid #333;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ffc709;
+  font-size: 1.2rem;
+  transition: all 0.3s;
+}
+
+.slickPrevArrow { left: -25px; }
+.slickNextArrow { right: -25px; }
+
+.slickPrevArrow:hover, .slickNextArrow:hover {
+  background: #ffc709;
+  color: #000;
+  box-shadow: 0 0 15px rgba(255, 199, 9, 0.5);
+}
+
+/* --- 5. Promotion Card Design (Dark Card) --- */
+.card {
+  width: 100%;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column; /* เรียงเนื้อหาแนวตั้ง */
+  height: 100%; /* ยืดความสูงเต็มพื้นที่ */
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  border-color: #ffc709;
+  box-shadow: 0 10px 30px rgba(255, 199, 9, 0.15);
+}
+
+.cardBanner {
+  height: 220px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0; /* ห้ามหด */
+}
+
+.cardBanner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.card:hover .cardBanner img {
+  transform: scale(1.1);
+}
+
+.cardBody {
+  padding: 20px;
+  flex: 1; /* ขยายพื้นที่ส่วนนี้ให้เต็มที่ เพื่อดันราคาไปล่างสุด */
+  display: flex;
+  flex-direction: column;
+}
+
+.cardDescription {
+  color: #ccc;
+  font-size: 1rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  height: 48px; /* บังคับ 2 บรรทัด */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.itemsHeader {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 5px;
+}
+
+/* --- รายการสินค้าใน Card (Fixed Height Area) --- */
+.itemsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  /* [สำคัญ] จองพื้นที่ความสูงขั้นต่ำไว้สำหรับ 3 รายการ เพื่อให้ปุ่มราคาตรงกัน */
+  min-height: 170px; 
+}
+
+.itemBox {
+  display: flex;
+  align-items: center;
+  background: #1a1a1a;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #333;
+  height: 50px; /* ล็อคความสูงของแต่ละกล่อง */
+  box-sizing: border-box;
+}
+
+.itemImage {
+  width: 35px;
+  height: 35px;
+  border-radius: 4px;
+  object-fit: cover;
+  margin-right: 10px;
+  border: 1px solid #444;
+}
+
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.itemName {
+  font-size: 0.85rem;
+  color: #fff;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.itemType {
+  font-size: 0.7rem;
+  color: #ffc709;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.moreItems {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+  padding-top: 5px;
+}
+
+/* --- ส่วนราคาและปุ่ม --- */
+.priceSection {
+  margin-top: auto; /* ดันตัวเองไปอยู่ล่างสุดของการ์ด */
+  border-top: 1px solid #222;
+  padding-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.priceWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.originalPrice {
+  font-size: 0.9rem;
+  color: #666;
+  text-decoration: line-through;
+  margin-bottom: 2px;
+}
+
+.discountPrice {
+  font-size: 1.6rem;
+  color: #ffc709;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.detailsButton {
+  background: transparent;
+  border: 1px solid #ffc709;
+  color: #ffc709;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.3s;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.detailsButton:hover {
+  background: #ffc709;
+  color: #000;
+  box-shadow: 0 0 15px rgba(255, 199, 9, 0.4);
+}
+
+/* --- 6. Promotions Grid (All Promotions) --- */
+.promotionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* Responsive Grid */
+  gap: 30px;
+  margin-top: 30px;
+}
+
+/* =========================================
+   🔥 Mobile Responsive 🔥
+   ========================================= */
+@media (max-width: 768px) {
+  .heroBanner { height: 250px; }
+  .sectionTitle { font-size: 1.8rem; margin: 30px 0 20px; }
+  .promotionsGrid { grid-template-columns: 1fr; } /* มือถือเหลือ 1 คอลัมน์ */
+  .slickPrevArrow, .slickNextArrow { display: none !important; } /* ซ่อนลูกศรในมือถือ */
+  .carouselWrapper { margin: 0; }
+  .cardBanner { height: 180px; }
+
+  /* 🔥 เปลี่ยน Flash Deals ให้ปัดซ้าย-ขวา ทีละ 1 การ์ด 🔥 */
+  .carouselWrapper :global(.slick-list) {
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  
+  .carouselWrapper :global(.slick-list)::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  .carouselWrapper :global(.slick-track) {
+    display: flex !important;
+    width: max-content !important;
+    transform: none !important; /* ปิดระบบเลื่อนด้วย JS เดิมของ Slider */
+  }
+  
+  .carouselWrapper :global(.slick-slide) {
+    width: 85vw !important; /* บังคับกว้าง 85% ของจอ เพื่อให้โชว์ทีละ 1 อัน */
+    flex: 0 0 85vw !important;
+    float: none !important;
+    scroll-snap-align: center !important; /* ล็อคให้อยู่ตรงกลางตอนปัด */
+  }
+}

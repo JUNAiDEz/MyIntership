@@ -1,0 +1,187 @@
+.blogCard {
+  background-color: #fff;
+  border: 1.5px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%; /* ให้การ์ดขยายเต็มความกว้างของ grid cell */
+}
+
+/* เอฟเฟกต์ตอน Hover */
+.blogCard:hover {
+  border-color: #ffc107;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.imageContainer {
+  position: relative;
+}
+
+.blogImage {
+  width: 100%;
+  height: 228px;
+  object-fit: cover;
+  background-color: #d8d8d8;
+  display: block; /* แก้ปัญหาช่องว่างใต้รูป */
+}
+
+/* ป้ายวันที่ */
+.dateBadge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background-color: #ffc107;
+  color: #000;
+  padding: 8px 12px;
+  border-radius: 5px;
+  text-align: center;
+  line-height: 1;
+  z-index: 2;
+}
+.dateBadge strong {
+  font-size: 1.2rem;
+  display: block;
+}
+.dateBadge span {
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* เนื้อหา */
+.cardContent {
+  padding: 20px;
+  flex-grow: 1; /* ดัน Footer ลงล่างสุดเสมอ */
+  display: flex;
+  flex-direction: column;
+}
+
+.author {
+  font-size: 0.8rem;
+  color: #777;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #000;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.description {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ส่วนล่างสุด */
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto; /* ดันส่วนนี้ลงล่างสุดของการ์ด */
+}
+
+.readMore {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #000;
+  text-decoration: none;
+}
+
+.socialIcons {
+  display: flex;
+  gap: 10px;
+}
+.socialIcons a {
+  color: #555;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+.socialIcons a:hover {
+  color: #000;
+}
+
+/* --- Responsive สำหรับ Mobile --- */
+/* ปรับจูนตรงนี้เพื่อให้ดูดีใน 2 คอลัมน์ */
+@media (max-width: 768px) {
+  .blogCard {
+    margin: 0; /* ลบ margin เพราะเราใช้ gap ใน grid แล้ว */
+    border-radius: 6px;
+  }
+
+  .blogImage {
+    height: 140px; /* ลดความสูงรูปให้สมส่วนกับความกว้างที่ลดลง */
+  }
+
+  .dateBadge {
+    top: 6px;
+    left: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .dateBadge strong {
+    font-size: 0.9rem;
+  }
+
+  .dateBadge span {
+    font-size: 0.6rem;
+  }
+
+  .cardContent {
+    padding: 10px; /* ลด Padding ลงเพื่อให้เหลือที่วางข้อความ */
+  }
+
+  .author {
+    font-size: 0.65rem;
+    margin-bottom: 4px;
+  }
+
+  .title {
+    font-size: 0.9rem; /* ลดขนาดหัวข้อ */
+    margin-bottom: 6px;
+    line-height: 1.3;
+    
+    /* ตัดหัวข้อให้เหลือ 2 บรรทัดถ้ามันยาวเกินไป */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .description {
+    font-size: 0.75rem;
+    margin-bottom: 10px;
+    -webkit-line-clamp: 2; /* โชว์แค่ 2 บรรทัด */
+    display: none; /* [ทางเลือก] ซ่อนคำบรรยายไปเลยในมือถือถ้าอยากให้การ์ดสั้นลง */
+  }
+
+  .cardFooter {
+    flex-direction: row; /* แนวนอนเหมือนเดิมประหยัดที่กว่า */
+    align-items: center;
+  }
+
+  .readMore {
+    font-size: 0.7rem;
+  }
+
+  .socialIcons {
+    gap: 6px;
+  }
+
+  .socialIcons a {
+    font-size: 0.75rem;
+  }
+}

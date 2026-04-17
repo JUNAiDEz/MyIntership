@@ -1,0 +1,415 @@
+/* Variables for easy theme management */
+:root {
+  --primary-yellow: #ffc709;
+  --pure-black: #000000;
+  --pure-white: #ffffff;
+  --dark-grey: #1a1a1a; /* ใช้สำหรับพื้นหลัง Card เพื่อให้ลอยออกมาจากสีดำล้วนน */
+  --light-grey: #333333;
+  --text-grey: #cccccc;
+}
+
+.dashboardPage {
+  min-height: 100vh;
+  background-color: var(--pure-black);
+  color: var(--pure-white);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 2rem 1rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* --- Header --- */
+.pageTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-yellow);
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+  text-align: center;
+  border-bottom: 2px solid var(--light-grey);
+  padding-bottom: 1rem;
+  letter-spacing: 1px;
+}
+
+/* --- Sections --- */
+.section {
+  margin-bottom: 4rem;
+}
+
+.sectionTitle {
+  font-size: 1.8rem;
+  color: var(--pure-white);
+  margin-bottom: 1.5rem;
+  border-left: 5px solid var(--primary-yellow);
+  padding-left: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+/* --- Forms & Cards --- */
+.formCard {
+  background-color: var(--dark-grey);
+  border: 1px solid var(--light-grey);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.formCard h3 {
+  margin-top: 0;
+  color: var(--primary-yellow);
+  margin-bottom: 1.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-grey);
+  font-weight: 500;
+}
+
+.input,
+.textarea,
+.colorInput {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--pure-black);
+  border: 1px solid var(--light-grey);
+  border-radius: 6px;
+  color: var(--pure-white);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-yellow);
+  box-shadow: 0 0 0 2px rgba(255, 199, 9, 0.2);
+}
+
+.textarea {
+  resize: vertical;
+}
+
+/* --- Image Upload Section --- */
+.imageSection {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px dashed var(--light-grey);
+  border-radius: 8px;
+}
+
+.imageSection h4 {
+  color: var(--pure-white);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.imageRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.imageUpload {
+  display: flex;
+  flex-direction: column;
+}
+
+.fileInput {
+  background-color: var(--pure-black);
+  color: var(--text-grey);
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--light-grey);
+}
+
+.fileInput::file-selector-button {
+  background-color: var(--light-grey);
+  color: var(--pure-white);
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  margin-right: 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.fileInput::file-selector-button:hover {
+  background-color: var(--primary-yellow);
+  color: var(--pure-black);
+}
+
+.preview {
+  margin-top: 10px;
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  background-color: var(--pure-black);
+  border: 1px solid var(--light-grey);
+  border-radius: 4px;
+}
+
+/* --- Buttons --- */
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btnPrimary {
+  background-color: var(--primary-yellow);
+  color: var(--pure-black);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 199, 9, 0.4);
+}
+
+.btnSecondary {
+  background-color: transparent;
+  color: var(--pure-white);
+  border: 1px solid var(--pure-white);
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s;
+}
+
+.btnSecondary:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Car List --- */
+.carList {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.carCard {
+  background-color: var(--dark-grey);
+  border-left: 4px solid var(--primary-yellow);
+  padding: 1.5rem;
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.carInfo h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  color: var(--pure-white);
+}
+
+.carInfo p {
+  color: var(--text-grey);
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
+
+.carImages {
+  display: flex;
+  gap: 10px;
+}
+
+.carImages img {
+  width: 60px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--light-grey);
+}
+
+.carActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btnEdit {
+  background-color: var(--light-grey);
+  color: var(--pure-white);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btnEdit:hover {
+  background-color: var(--pure-white);
+  color: var(--pure-black);
+}
+
+.btnDelete {
+  background-color: transparent;
+  color: #ff4d4d; /* ใช้สีแดงเล็กน้อยสำหรับปุ่มลบเพื่อความปลอดภัย UX */
+  border: 1px solid #ff4d4d;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btnDelete:hover {
+  background-color: #ff4d4d;
+  color: white;
+}
+
+/* --- Color Section --- */
+.colorFormRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1.5rem;
+}
+
+.colorList {
+  background-color: var(--dark-grey);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+.colorList h3 {
+  margin-top: 0;
+  color: var(--pure-white);
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.colorCard {
+  background-color: var(--pure-black);
+  border: 1px solid var(--light-grey);
+  border-radius: 8px;
+  padding: 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.colorBox {
+  width: 100%;
+  height: 60px;
+  border-radius: 6px;
+  border: 1px solid #444; /* Border for black/dark colors */
+}
+
+.colorInfo {
+  width: 100%;
+}
+
+.colorInfo strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--pure-white);
+}
+
+.colorInfo small {
+  color: var(--text-grey);
+  font-size: 0.8rem;
+}
+
+.colorActions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.btnDeleteSmall {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.btnDeleteSmall:hover {
+  background: #ff4d4d;
+}
+
+/* --- Export Section --- */
+.exportDesc {
+  color: var(--text-grey);
+  margin-bottom: 1rem;
+}
+
+.btnExport {
+  width: 100%;
+  padding: 20px;
+  background-color: var(--dark-grey);
+  border: 2px dashed var(--primary-yellow);
+  color: var(--primary-yellow);
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.btnExport:hover {
+  background-color: var(--primary-yellow);
+  color: var(--pure-black);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .imageRow {
+    grid-template-columns: 1fr;
+  }
+  
+  .carCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .carActions {
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

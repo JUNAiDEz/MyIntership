@@ -1,0 +1,283 @@
+/* --- Global Container --- */
+.pageContainer {
+  padding: 24px;
+  background-color: #fafafa;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1f2937;
+}
+
+/* --- Header Section (เหมือน ProductManagementPage) --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #000;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 18px;
+}
+
+.title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 6px;
+  height: 28px;
+  background-color: #ffc709; /* แถบสีเหลือง */
+  border-radius: 2px;
+}
+
+/* --- Controls Group (Search + Button) --- */
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* --- Search Bar --- */
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  z-index: 1;
+}
+
+.searchInput {
+  padding: 10px 16px 10px 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  width: 260px;
+  background-color: #ffffff;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(255, 199, 9, 0.2);
+}
+
+/* --- Buttons --- */
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffc709;
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(255, 199, 9, 0.4);
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.addButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px -1px rgba(255, 199, 9, 0.5);
+}
+
+/* --- Table Styles (เหมือนเดิม) --- */
+.tableCard {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.tableContainer { overflow-x: auto; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table thead tr {
+  background-color: #f3f4f6;
+  border-bottom: 2px solid #000;
+}
+
+.table th {
+  padding: 16px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000;
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.1s;
+}
+
+.table tbody tr:hover { background-color: #fffbeb; }
+
+.table td {
+  padding: 16px;
+  vertical-align: middle;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.inlineSelect {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  width: 100%;
+  max-width: 250px;
+  outline: none;
+}
+.inlineSelect:focus {
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(255, 199, 9, 0.2);
+}
+
+/* --- Icons --- */
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.iconBtn {
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  color: #4b5563;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.iconBtn:hover {
+  background-color: #000;
+  color: #ffc709;
+  border-color: #000;
+  transform: translateY(-2px);
+}
+
+.iconBtn.save:hover {
+  background-color: #059669;
+  color: #fff;
+  border-color: #059669;
+}
+
+/* --- Modal --- */
+.modalBackdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modalContent {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 500px;
+  max-width: 95%;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 4px solid #ffc709;
+  padding-bottom: 10px;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #000;
+}
+
+.formGroup { margin-bottom: 14px; }
+.formLabel {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+.formInput {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+.formInput:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(255, 199, 9, 0.2);
+}
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+.btnCancel {
+  padding: 8px 16px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btnSubmit {
+  padding: 8px 20px;
+  background: #000;
+  color: #ffc709;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.btnSubmit:hover { opacity: 0.9; }
+.errorMessage {
+  color: #ef4444;
+  background: #fee2e2;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}

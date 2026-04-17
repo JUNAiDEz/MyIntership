@@ -1,0 +1,311 @@
+/* ContactPage.module.css */
+
+/* --- Global Layout --- */
+.pageWrapper {
+  background-color: #050505;
+  color: #fff;
+  min-height: 100vh;
+  font-family: 'Kanit', sans-serif;
+}
+
+/* --- Hero Header --- */
+.heroHeader {
+  height: 350px;
+  background-image: url('https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80'); /* รูปห้องเครื่องหรืออุปกรณ์ช่าง */
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 0; /* ติดกับส่วนเนื้อหาเลย */
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6), #050505);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  padding: 0 20px;
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  margin: 0;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+
+.heroTitle span {
+  color: #ffc709;
+}
+
+.heroSubtitle {
+  font-size: 1.1rem;
+  color: #ccc;
+  margin-top: 10px;
+  max-width: 600px;
+}
+
+/* --- Main Content Layout --- */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.gridWrapper {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr; /* แบ่งสัดส่วน ซ้าย 40% ขวา 60% */
+  gap: 40px;
+  align-items: start;
+}
+
+/* --- Contact Info Box (Left Side) --- */
+.infoBox {
+  background: #111;
+  border: 1px solid #222;
+  border-left: 4px solid #ffc709;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.infoTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 30px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #333;
+  padding-bottom: 15px;
+}
+
+.infoItem {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 25px;
+}
+
+.infoIcon {
+  width: 40px;
+  height: 40px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #ffc709;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.infoContent h4 {
+  margin: 0 0 5px 0;
+  color: #ddd;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.infoContent p {
+  margin: 0;
+  color: #888;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Social Media Links */
+.socialLinks {
+  margin-top: 40px;
+  display: flex;
+  gap: 15px;
+}
+
+.socialIcon {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  transition: all 0.3s;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.socialIcon:hover {
+  background: #ffc709;
+  border-color: #ffc709;
+  color: #000;
+}
+
+
+/* --- Contact Form (Right Side) --- */
+.formBox {
+  background: #111;
+  padding: 40px;
+  border-radius: 8px;
+  border: 1px solid #222;
+  position: relative;
+}
+
+/* ตกแต่งมุมกรอบให้ดู Tech */
+.formBox::before {
+  content: '';
+  position: absolute;
+  top: -1px; right: -1px;
+  width: 20px; height: 20px;
+  border-top: 2px solid #ffc709;
+  border-right: 2px solid #ffc709;
+}
+.formBox::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: -1px;
+  width: 20px; height: 20px;
+  border-bottom: 2px solid #ffc709;
+  border-left: 2px solid #ffc709;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.label {
+  display: block;
+  color: #aaa;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.input, .textarea {
+  width: 100%;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 12px 15px;
+  font-family: 'Kanit', sans-serif;
+  font-size: 1rem;
+  border-radius: 4px;
+  transition: all 0.3s;
+  box-sizing: border-box; /* สำคัญ! เพื่อไม่ให้ Padding ดันกล่องขยาย */
+}
+
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: #ffc709;
+  background: #141414;
+  box-shadow: 0 0 10px rgba(255, 199, 9, 0.1);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.submitBtn {
+  background: #ffc709;
+  color: #000;
+  border: none;
+  padding: 15px 30px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  width: 100%;
+  letter-spacing: 1px;
+}
+
+.submitBtn:hover {
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 199, 9, 0.4);
+}
+
+.submitBtn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Feedback Messages */
+.successMsg, .errorMsg {
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 500;
+}
+.successMsg { background: rgba(40, 167, 69, 0.2); border: 1px solid #28a745; color: #28a745; }
+.errorMsg { background: rgba(220, 53, 69, 0.2); border: 1px solid #dc3545; color: #dc3545; }
+
+
+/* --- Map Section --- */
+.mapSection {
+  margin-top: 60px;
+  position: relative;
+  padding: 10px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+}
+
+.mapTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 20px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.mapWrapper {
+    height: 450px;
+    filter: grayscale(100%) invert(90%); /* ทำแผนที่ให้เป็น Dark Mode (แบบ Hack) */
+    border-radius: 4px;
+    overflow: hidden;
+    transition: filter 0.3s;
+}
+
+.mapSection:hover .mapWrapper {
+    filter: grayscale(0%); /* คืนสีแผนที่เมื่อเอาเมาส์ชี้ */
+}
+
+/* Mobile Responsive */
+@media (max-width: 992px) {
+  .gridWrapper { grid-template-columns: 1fr; }
+  .formGrid { grid-template-columns: 1fr; }
+  .heroHeader { height: 250px; }
+  .heroTitle { font-size: 2.5rem; }
+}

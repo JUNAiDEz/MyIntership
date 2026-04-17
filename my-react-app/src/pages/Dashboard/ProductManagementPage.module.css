@@ -1,0 +1,438 @@
+/* --- Global Container --- */
+.pageContainer {
+  padding: 24px;
+  background-color: #fafafa; /* พื้นหลังเทาอ่อน สบายตา */
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1f2937;
+}
+
+/* --- Header Section --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #000000;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 16px;
+}
+
+.title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 6px;
+  height: 70%;
+  background-color: #ffc709; /* แถบสีเหลืองด้านหน้า */
+  border-radius: 2px;
+}
+
+/* --- Controls --- */
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  z-index: 1;
+}
+
+.searchInput {
+  padding: 10px 16px 10px 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  width: 280px;
+  background-color: #ffffff;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(255, 199, 9, 0.2); /* Glow สีเหลือง */
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffc709; /* ปุ่มสีเหลือง */
+  color: #000000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(255, 199, 9, 0.4);
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.addButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px -1px rgba(255, 199, 9, 0.5);
+}
+
+/* --- Table Card --- */
+.tableCard {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table thead tr {
+  background-color: #fafafa;
+  border-bottom: 2px solid #000000; /* เส้นใต้หัวตารางสีดำเข้ม */
+}
+
+.table th {
+  padding: 16px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.1s;
+}
+
+.table tbody tr:hover {
+  background-color: #fffbeb; /* Hover แล้วเป็นสีเหลืองจางๆ */
+}
+
+.table td {
+  padding: 16px;
+  vertical-align: middle;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+/* --- Table Elements --- */
+.productImage {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.skuText {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.productTitle {
+  font-weight: 600;
+  color: #000000;
+  display: block;
+}
+
+.discountBadge {
+  font-size: 0.75rem;
+  color: #fff;
+  background-color: #ef4444;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.categoryText {
+  font-weight: 500;
+  color: #111827;
+}
+
+.brandText {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.priceText {
+  font-weight: 700;
+  color: #000000;
+}
+
+/* Stock & Status */
+.stockLow { color: #ef4444; font-weight: 700; }
+.stockNormal { color: #10b981; font-weight: 600; }
+
+.statusActive {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: #ecfdf5;
+  color: #059669;
+  border: 1px solid #d1fae5;
+}
+
+.statusInactive {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+/* --- Actions (แก้ไขใหม่ให้เด่นขึ้น) --- */
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.iconBtn {
+  background-color: #ffffff;  /* พื้นหลังขาว */
+  border: 1px solid #d1d5db;  /* ขอบเทาชัดเจน */
+  color: #4b5563;             /* ไอคอนเทาเข้ม */
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.iconBtn:hover {
+  background-color: #000000; /* Hover ดำ */
+  color: #ffc709;            /* ไอคอนเหลือง */
+  border-color: #000000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+}
+
+.iconBtn.delete:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+.iconBtn.starActive {
+  color: #ffc709;
+  border-color: #ffc709;
+  background-color: #fffbeb;
+}
+
+/* Toggle Switch */
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  margin: 0 4px;
+}
+
+.toggleSwitch input { opacity: 0; width: 0; height: 0; }
+
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #e5e7eb;
+  transition: .4s;
+  border-radius: 22px;
+  border: 1px solid #d1d5db;
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.toggleSwitch input:checked + .toggleSlider {
+  background-color: #000000; /* ดำเมื่อเปิด */
+  border-color: #000000;
+}
+
+.toggleSwitch input:checked + .toggleSlider:before {
+  transform: translateX(18px);
+  background-color: #ffc709; /* จุดเหลือง */
+}
+
+/* --- Footer --- */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.pagination { display: flex; gap: 8px; }
+
+.pageBtn {
+  padding: 6px 14px;
+  border: 1px solid #e5e7eb;
+  background-color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: #000000;
+  color: #000000;
+}
+
+.pageBtn:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* --- Modal --- */
+.modalBackdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modalContent {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 16px;
+  width: 600px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.modalContent h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #000000;
+  border-bottom: 4px solid #ffc709;
+  display: inline-block;
+  padding-bottom: 4px;
+  margin-bottom: 24px;
+}
+
+/* Form Styles */
+.formRow { display: flex; gap: 16px; margin-bottom: 16px; }
+.formRow > div { flex: 1; }
+.formGroup { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+
+.formLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.formInput, .formSelect, .formTextarea {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
+
+.formInput:focus, .formSelect:focus, .formTextarea:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(255, 199, 9, 0.2);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.btnCancel {
+  padding: 10px 20px;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnSubmit {
+  padding: 10px 24px;
+  background-color: #000000;
+  color: #ffc709;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btnSubmit:hover { opacity: 0.9; }
+
+.errorMessage {
+  background-color: #fee2e2;
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border-left: 4px solid #ef4444;
+}

@@ -1,0 +1,233 @@
+/* FAQPage.module.css */
+
+/* --- Global Layout --- */
+.pageWrapper {
+  background-color: #050505;
+  color: #fff;
+  min-height: 100vh;
+  font-family: 'Kanit', sans-serif;
+  padding-bottom: 60px;
+}
+
+/* --- Hero Section (เพิ่มส่วนนี้เพื่อให้ดูแพงขึ้น) --- */
+.heroHeader {
+  height: 350px;
+  background-image: url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80'); /* ใช้รูปโทนเดียวกับหน้าอื่น */
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.7), #050505);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  padding: 0 20px;
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  margin: 0;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+
+.heroTitle span {
+  color: #ffc709;
+}
+
+.heroSubtitle {
+  font-size: 1.1rem;
+  color: #ccc;
+  margin-top: 10px;
+  max-width: 600px;
+}
+
+/* --- Filter Container --- */
+.filterContainer {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 40px;
+  padding: 0 20px;
+}
+
+.filterButton {
+  background: #111;
+  border: 1px solid #333;
+  color: #888;
+  padding: 10px 25px;
+  border-radius: 4px; /* เหลี่ยมขึ้นหน่อยให้ดู Tech */
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.filterButton:hover {
+  border-color: #ffc709;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.filterButton.active {
+  background: #ffc709;
+  border-color: #ffc709;
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 0 15px rgba(255, 199, 9, 0.3);
+}
+
+/* --- Grid Layout --- */
+.gridContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 25px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* --- FAQ Card (Tech Style) --- */
+.card {
+  background: #111;
+  border: 1px solid #222;
+  border-left: 3px solid #333; /* แถบสีด้านซ้าย */
+  border-radius: 6px;
+  padding: 30px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none; /* ลิงก์ครอบการ์ด */
+}
+
+/* Background Pattern จางๆ */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 100px;
+  height: 100px;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255,255,255,0.03) 10px,
+    rgba(255,255,255,0.03) 20px
+  );
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: #444;
+  border-left-color: #ffc709; /* เปลี่ยนแถบซ้ายเป็นสีเหลือง */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.cardContent {
+  position: relative;
+  z-index: 2;
+}
+
+.categoryBadge {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: #ffc709;
+  border: 1px solid #ffc709;
+  padding: 2px 8px;
+  border-radius: 2px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 15px 0;
+  line-height: 1.4;
+}
+
+.cardSnippet {
+  font-size: 0.95rem;
+  color: #aaa;
+  line-height: 1.6;
+  margin: 0;
+  /* ตัดคำ 3 บรรทัด */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ปุ่มอ่านต่อ */
+.cardButton {
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  color: #ffc709;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.3s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cardButton:hover {
+  letter-spacing: 1px; /* เอฟเฟกต์ตัวหนังสือขยายออก */
+  text-shadow: 0 0 10px rgba(255, 199, 9, 0.5);
+}
+
+/* Icon ลูกศร */
+.iconArrow {
+  margin-left: 8px;
+  transition: transform 0.3s;
+}
+
+.card:hover .iconArrow {
+  transform: translateX(5px);
+}
+
+.noData {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 50px;
+  color: #666;
+  font-size: 1.1rem;
+  border: 1px dashed #333;
+  border-radius: 8px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .heroHeader { height: 250px; }
+  .heroTitle { font-size: 2.5rem; }
+  .gridContainer { grid-template-columns: 1fr; }
+  .card { min-height: auto; }
+}

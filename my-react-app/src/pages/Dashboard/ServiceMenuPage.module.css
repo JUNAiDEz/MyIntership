@@ -1,0 +1,164 @@
+/* --- Layout หลัก --- */
+.container {
+  padding: 24px;
+  background-color: #f8f9fa; /* พื้นหลังสีเทาอ่อน สบายตา */
+  min-height: 100vh;
+  font-family: 'Prompt', 'Sarabun', sans-serif; /* แนะนำให้ใช้ฟอนต์ไทย */
+}
+
+/* --- Header Section --- */
+.header {
+  margin-bottom: 24px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  /* แก้ปัญหาช่องว่างด้านบนที่เคยเจอ */
+  margin-top: 0; 
+  margin-bottom: 8px;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* --- Grid Layout --- */
+.menuList {
+  display: grid;
+  /* แบ่งเป็น 2 คอลัมน์เท่ากัน */
+  grid-template-columns: 1fr 1fr; 
+  gap: 20px;
+}
+
+/* การ์ดแบบเต็มความกว้าง (สำหรับใบแรก) */
+.fullWidth {
+  grid-column: 1 / -1; /* กินพื้นที่ตั้งแต่เส้นแรกยันเส้นสุดท้าย */
+}
+
+/* --- Card Styles --- */
+.menuCard {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 16px; /* มุมโค้งมนกว่าเดิมนิดหน่อยให้ดูโมเดิร์น */
+  border: 1px solid #e5e7eb;
+  text-decoration: none; /* ลบขีดเส้นใต้ Link */
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hover Effect: ยกการ์ดขึ้นเล็กน้อย + เงาชัดขึ้น */
+.menuCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-color: #d1d5db;
+}
+
+/* --- Icon Styles --- */
+.iconBox {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-right: 20px;
+  flex-shrink: 0; /* ป้องกันไอคอนบีบตัวเมื่อจอเล็ก */
+}
+
+/* สีพื้นหลังของไอคอน (ใช้โทนสีอ่อน + ไอคอนสีเข้ม ดูแพงกว่า) */
+.blue { background-color: #eff6ff; color: #2563eb; }
+.orange { background-color: #fff7ed; color: #ea580c; }
+.green { background-color: #f0fdf4; color: #16a34a; }
+.red { background-color: #fef2f2; color: #dc2626; }
+.purple { background-color: #faf5ff; color: #9333ea; }
+
+/* --- Text Content --- */
+.content {
+  flex-grow: 1; /* ดันเนื้อหาให้เต็มพื้นที่ */
+  margin-right: 16px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap; /* ถ้าจอเล็กมากให้ปัดบรรทัดใหม่ได้ */
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.menuCard h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+  display: block;
+}
+
+/* --- Badge (ตัวนับจำนวน) --- */
+.badge {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
+}
+
+.menuCard:hover .badge {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+/* --- Arrow Icon --- */
+.arrow {
+  color: #9ca3af;
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.menuCard:hover .arrow {
+  transform: translateX(4px); /* ขยับลูกศรไปขวาเมื่อชี้ */
+  color: #4b5563;
+}
+
+/* --- Responsive Design --- */
+
+/* Tablet & Mobile: ให้ทุกการ์ดเรียงแถวเดียว */
+@media (max-width: 768px) {
+  .menuList {
+    grid-template-columns: 1fr;
+  }
+  
+  .menuCard {
+    padding: 20px; /* ลด Padding นิดหน่อยในมือถือ */
+  }
+
+  .iconBox {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    margin-right: 16px;
+  }
+  
+  .badge {
+    margin-top: 4px; /* ในมือถืออาจจะปัด Badge ลงมาถ้าชื่อยาว */
+  }
+}

@@ -1,0 +1,189 @@
+/* "แถบ" หุ้มทั้งหมด (พื้นหลังสีขาว) */
+.colorizerSection {
+  padding: 50px 0;
+  background-color: #000000;
+  background-image: url('/images/carwrap/Eiei.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  border-top: 1px solid #1f1f1f;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 30px;
+  color: #ffffff;
+}
+
+/* (สำคัญ!) กล่องหุ้มรูปภาพ */
+.imageWrapper {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9; /* รักษาสัดส่วนให้คงที่ */
+  background: transparent;
+}
+
+/* (รูปรถตามสี) */
+.baseImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain; /* ทำให้รูปอยู่ในกรอบโดยไม่บิดเบี้ยว */
+}
+
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.2s ease;
+  z-index: 2;
+}
+
+.navButton:hover {
+  background: rgba(0, 0, 0, 0.65);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.navLeft {
+  left: 12px;
+}
+
+.navRight {
+  right: 12px;
+}
+
+.slideInRight {
+  animation: slideInRight 0.35s ease;
+}
+
+.slideInLeft {
+  animation: slideInLeft 0.35s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* (ปุ่มเลือกสี) */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid #ffffff; /* ขอบขาว */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+/* (ปุ่มที่ถูกเลือก) */
+.swatch.active {
+  border-color: #007bff; /* ขอบสีน้ำเงิน */
+  transform: scale(1.15);
+}
+
+/* --- Responsive สำหรับ Mobile --- */
+@media (max-width: 768px) {
+  .colorizerSection {
+    padding: 20px 0;
+    min-height: auto; /* สูงพอดีกับเนื้อหา ลดพื้นที่ว่าง */
+    background-size: cover; /* ให้ภาพพื้นหลังเต็มความกว้าง */
+    background-position: center;
+    background-color: #f5f5f5; /* กันไม่ให้เห็นพื้นดำถ้าภาพมีขอบ */
+    width: 100vw; /* ดึงให้พื้นหลังเต็มหน้าจอ */
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+
+  .container {
+    padding: 0 12px;
+    width: 100%;
+  }
+
+  .title {
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+  }
+
+  .imageWrapper {
+    border-radius: 6px;
+  }
+
+  .controls {
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .swatch {
+    width: 35px;
+    height: 35px;
+    border-width: 2px;
+  }
+
+  .swatch:hover {
+    transform: scale(1.08);
+  }
+
+  .swatch.active {
+    transform: scale(1.12);
+  }
+
+  .navButton {
+    width: 38px;
+    height: 38px;
+    font-size: 22px;
+  }
+}

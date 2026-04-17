@@ -1,0 +1,385 @@
+/* ===== Design Tokens ===== */
+:root {
+  --color-brand-accent: #ffc709;
+  --color-primary: #000000;
+  --color-card-bg: #ffffff;
+  --color-app-bg: #fafafa;
+  --color-text-secondary: #6b7280;
+  --border-gray: #e5e7eb;
+}
+
+/* ===== Shadows ===== */
+.shadow-accent {
+  box-shadow: 0 4px 16px 0 rgba(255, 199, 9, 0.3);
+}
+.shadow-black {
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Borders ===== */
+.border-gray {
+  border: 1px solid var(--border-gray);
+}
+.border-black {
+  border: 1px solid var(--color-primary);
+}
+
+/* ===== Font Weights ===== */
+.font-black {
+  font-weight: 900;
+}
+.font-bold {
+  font-weight: 700;
+}
+
+/* ===== Example Usage ===== */
+.highlight-btn {
+  background: var(--color-brand-accent);
+  color: var(--color-primary);
+  box-shadow: 0 2px 8px 0 rgba(255, 199, 9, 0.3);
+  font-weight: 700;
+  border-radius: 6px;
+  border: none;
+}
+
+.main-bg {
+  background: var(--color-app-bg);
+}
+
+.card {
+  background: var(--color-card-bg);
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.05);
+  border-radius: 8px;
+  border: 1px solid var(--border-gray);
+}
+
+.heading {
+  color: var(--color-primary);
+  font-weight: 900;
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+/* CSS สำหรับหน้าจัดการข้อมูล (ใช้ร่วมกันได้กับทุกหน้า) */
+.content {
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  font-family: 'Kanit', sans-serif;
+}
+
+/* Header Section */
+.productHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.contentTitle {
+  margin: 0;
+  font-size: 1.6rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.searchInput {
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  width: 250px;
+  transition: all 0.3s;
+}
+.searchInput:focus {
+  border-color: #ffc709;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 199, 9, 0.1);
+}
+
+.addButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: 0.2s;
+}
+.addButton:hover {
+  background-color: #218838;
+  transform: translateY(-1px);
+}
+
+/* Table */
+.productTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.productTable th, .productTable td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+  vertical-align: middle;
+}
+.productTable th {
+  background-color: #f9fafb;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+.productTableImage {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  background-color: #f9f9f9;
+}
+
+/* Status Badges */
+.statusActive {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-block;
+}
+.statusInactive {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Action Buttons */
+.actionButton, .actionButtonView, .actionButtonDelete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: 0.2s;
+  font-size: 1.1rem;
+  color: #666;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.actionButton:hover { background-color: #e0f2fe; color: #0284c7; }
+.actionButtonView:hover { background-color: #f3f4f6; color: #333; }
+.actionButtonDelete:hover { background-color: #fee2e2; color: #dc2626; }
+
+/* Pagination */
+.paginationWrapper {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+.pageBtn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.pageBtn:hover:not(:disabled) {
+  border-color: #333;
+  color: #333;
+}
+.pageBtn:disabled {
+  background: #f3f4f6;
+  color: #ccc;
+  cursor: not-allowed;
+  border-color: #eee;
+}
+
+/* Modal */
+.modalBackdrop {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  backdrop-filter: blur(2px);
+}
+.modalContent {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 600px;
+  max-width: 90%;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+.modalContent h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+/* Form Elements */
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.label {
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 500;
+}
+.input, .select, .textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-sizing: border-box;
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.95rem;
+  transition: 0.2s;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: #ffc709;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 199, 9, 0.1);
+}
+.textarea { resize: vertical; }
+
+.btnPrimary {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+}
+.btnPrimary:hover { background: #0056b3; }
+.btnPrimary:disabled { background: #ccc; cursor: not-allowed; }
+
+.btnSecondary {
+  background: #f3f4f6;
+  color: #555;
+  border: 1px solid #ddd;
+  padding: 10px 25px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btnSecondary:hover { background: #e5e7eb; }
+
+.errorMessage {
+  color: #dc3545;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  padding: 10px;
+  background: #fee2e2;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
+/* Toggle Switch */
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  margin: 0 5px;
+  vertical-align: middle;
+}
+.toggleSwitch input { opacity: 0; width: 0; height: 0; }
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #e5e7eb;
+  transition: .3s;
+  border-radius: 20px;
+}
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+input:checked + .toggleSlider { background-color: #28a745; }
+input:checked + .toggleSlider:before { transform: translateX(16px); }
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Service Menu Page Styles */
+.menuContainer {
+  padding: 32px 24px;
+  background: #fff;
+  border-radius: 12px;
+  max-width: 480px;
+  margin: 40px auto;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.menuList {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0 0;
+}
+.menuList li {
+  margin-bottom: 18px;
+}
+.menuList a {
+  display: block;
+  padding: 16px 20px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  color: #222;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.menuList a:hover {
+  background: #e0e7ef;
+  color: #1976d2;
+}

@@ -1,0 +1,14 @@
+# robots.txt for https://front.gt7dev.com/
+
+User-agent: *
+Allow: /
+
+# Disallow any admin or private paths
+Disallow: /admin/
+Disallow: /private/
+
+# Sitemap location
+Sitemap: https://front.gt7dev.com/sitemap.xml
+
+# Optional crawl delay (seconds)
+Crawl-delay: 10

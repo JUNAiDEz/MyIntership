@@ -1,0 +1,211 @@
+/* =========================================
+   SHOWCASE SECTION (Container หลัก)
+   ========================================= */
+.showcaseSection {
+  position: relative;
+  width: 100%;
+  min-height: 500px;
+  background-color: #0a0a0a;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  color: #fff;
+  padding: 40px 0;
+}
+
+/* พื้นหลังสีเหลืองเฉียง */
+.yellowBackgroundShape {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 55%;
+  height: 100%;
+  background-color: #ffc709;
+  clip-path: polygon(0 0, 100% 0, 75% 100%, 0% 100%);
+  z-index: 1;
+}
+
+.showcaseContainer {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* =========================================
+   INFO & STEP CONTROLS (ฝั่งซ้าย)
+   ========================================= */
+.showcaseInfo {
+  width: 40%;
+  text-align: center; /* จัดกลางตามดีไซน์ */
+}
+
+.showcaseTitle {
+  font-size: 5rem;
+  font-weight: 900;
+  margin-bottom: 5px;
+  color: #fff;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.showcaseDesc {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+  color: #fff;
+}
+
+.controlGroup {
+  margin-bottom: 25px;
+}
+
+.controlLabel {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 15px;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.optionBtn {
+  width: 220px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.activeBtn {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #fff;
+}
+
+/* การเลือกสี */
+.colorDots {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dotWrapper {
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+
+.activeDotWrapper {
+  border-color: #fff;
+  transform: scale(1.1);
+}
+
+.dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: block;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* =========================================
+   CAR IMAGE WRAPPER (ฝั่งขวา)
+   ========================================= */
+.showcaseMainImageWrapper {
+  width: 55%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.carLayerContainer {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 16 / 9;
+}
+
+.carLayerBase, .carLayerPaint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ปุ่ม Navigation */
+.showcaseControls {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  padding: 0 10px;
+  z-index: 20;
+}
+
+.navButton {
+  background: #ffc709;
+  color: #000;
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* =========================================
+   MOBILE RESPONSIVE (จุดสำคัญ)
+   ========================================= */
+@media (max-width: 992px) {
+  .yellowBackgroundShape {
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 0% 70%); /* เฉียงแบบในรูป */
+  }
+
+  .showcaseContainer {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .showcaseInfo {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .showcaseTitle {
+    font-size: 4rem;
+  }
+
+  .showcaseMainImageWrapper {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .dot {
+    width: 40px; /* ใหญ่ขึ้นเพื่อให้จิ้มง่าย */
+    height: 40px;
+  }
+}

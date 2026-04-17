@@ -1,0 +1,258 @@
+/* OurService.module.css (DYNAMIC THEME + หัวข้อเปลี่ยนดำ/เหลือง ตามธีม) */
+
+/* --- 1. Global Layout --- */
+.pageWrapper {
+  background-color: var(--bg-main); /* เปลี่ยนเป็นตัวแปร */
+  color: var(--text-main); /* เปลี่ยนเป็นตัวแปร */
+  min-height: 100vh;
+  font-family: 'Kanit', sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- 2. Hero Section (Banner ด้านบนสุด) --- */
+.heroSection {
+  height: 60vh;
+  min-height: 400px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  /* 🔥 ไล่สีจากดำโปร่งแสง เฟดลงไปหาพื้นหลังของเว็บ (สว่าง/มืด) แบบอัตโนมัติ 🔥 */
+  background: linear-gradient(to bottom, rgba(0,0,0,0.3), var(--bg-main)); 
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.heroContent h1 {
+  font-size: 4rem;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  color: #fff; /* บังคับขาวเสมอ เพราะอยู่บนรูปภาพ */
+  text-shadow: 0 0 20px rgba(0,0,0,0.8);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.heroContent span {
+  display: inline-block;
+  background: var(--accent-color);
+  color: #000;
+  padding: 5px 25px;
+  font-weight: 800;
+  font-size: 1.2rem;
+  transform: skew(-10deg);
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+/* --- 3. Service Row (Layout ซ้าย-ขวา) --- */
+.serviceRow {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 500px;
+  border-bottom: 1px solid var(--border-color); /* เปลี่ยนเป็นตัวแปรเส้นขอบ */
+  background: var(--bg-card); /* เปลี่ยนเป็นตัวแปรพื้นหลังกล่อง */
+  position: relative;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Class สำหรับสลับด้าน (รูปภาพอยู่ขวา) */
+.serviceRow.alignRight {
+  flex-direction: row-reverse;
+}
+
+/* ฝั่งรูปภาพใหญ่ */
+.imageSide {
+  flex: 1;
+  min-width: 350px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  /* Clip-path ตัดมุมเฉียง */
+  clip-path: polygon(0 0, 100% 0, 90% 100%, 0% 100%);
+  transition: all 0.5s ease;
+  filter: grayscale(80%) brightness(0.7); /* เริ่มต้นเป็นขาวดำมืดๆ */
+}
+
+/* ปรับ Clip-path เมื่อรูปอยู่ขวา */
+.serviceRow.alignRight .imageSide {
+  clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%);
+}
+
+/* Hover Effect: คืนสีให้รูป */
+.serviceRow:hover .imageSide {
+  filter: grayscale(0%) brightness(1);
+}
+
+/* ฝั่งเนื้อหา */
+.contentSide {
+  flex: 1;
+  min-width: 350px;
+  padding: 60px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  background: transparent; /* เอา gradient ดำๆ ออกเพื่อให้กลมกลืนกับพื้นหลัง */
+}
+
+/* หัวข้อ Section (Effect ตัวอักษรซ้อน) */
+.contentSide h2 {
+  font-size: 3.5rem;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  color: transparent;
+  /* 🔥 เปลี่ยนเส้นขอบข้อความให้เป็นตัวแปร เพื่อให้โหมดสว่างกลายเป็นขอบสีเทา มองเห็นได้ 🔥 */
+  -webkit-text-stroke: 1px var(--text-muted); 
+  position: relative;
+  line-height: 1;
+  transition: -webkit-text-stroke 0.3s ease;
+}
+
+/* 🔥 โชว์ตัวหนังสือเป็นสีดำในโหมดสว่าง และสีเหลืองในโหมดมืด 🔥 */
+.contentSide h2::after {
+  content: attr(data-title);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--text-accent); /* เปลี่ยนเป็น --text-accent */
+  opacity: 1; /* แสดงผลตลอดเวลา */
+  -webkit-text-stroke: 0;
+  filter: drop-shadow(0 0 10px rgba(255, 199, 9, 0.2)); /* ปรับเงาให้จางลงนิดนึงเพื่อไม่ให้กวนสีดำ */
+}
+
+/* --- 4. Grid ปุ่มบริการ (Cinematic Card Style - Big Version) --- */
+.subServiceGrid {
+  display: grid;
+  /* ปรับให้กว้างขึ้น เริ่มต้นที่ 220px */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.serviceItem {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* เพิ่มความสูงเป็น 150px ให้เห็นรูปชัดเจน */
+  height: 150px; 
+  
+  border-radius: 8px;
+  border: 1px solid var(--border-color); /* เปลี่ยนเส้นขอบตาม Theme */
+  
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Layer สีดำคลุมทับรูป (เพื่อให้ตัวหนังสือเด่น) */
+.overlayLayer {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75); /* บังคับดำโปร่งแสง 75% เพราะซ้อนทับอยู่บนรูปภาพ */
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+/* ตัวหนังสือในปุ่ม */
+.serviceText {
+  position: relative;
+  z-index: 2; /* อยู่เหนือ Overlay */
+  color: #fff; /* บังคับให้สว่างเสมอ ให้อ่านง่ายบนพื้นดำโปร่งแสง */
+  
+  /* ขยายขนาดตัวหนังสือ */
+  font-size: 1.2rem; 
+  font-weight: 700;
+  
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 0 15px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+  transition: all 0.3s;
+}
+
+/* --- Hover Effects สำหรับปุ่ม --- */
+.serviceItem:hover {
+  border-color: var(--accent-color); /* ขอบเปลี่ยนสีเหลือง */
+  transform: translateY(-5px); /* ลอยขึ้น */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2), 0 0 15px rgba(255, 199, 9, 0.2);
+}
+
+.serviceItem:hover .overlayLayer {
+  background: rgba(0, 0, 0, 0.3); /* สว่างขึ้น (ลดความเข้มของสีดำลง) */
+}
+
+.serviceItem:hover .serviceText {
+  color: #fff;
+  transform: scale(1.1); /* ขยายตัวหนังสือเล็กน้อย */
+  text-shadow: 0 0 15px rgba(255, 199, 9, 0.8);
+}
+
+/* --- 5. Mobile Responsive --- */
+@media (max-width: 768px) {
+  .heroContent h1 { font-size: 2.5rem; }
+  
+  .serviceRow, .serviceRow.alignRight { 
+    flex-direction: column; 
+    height: auto;
+  }
+  
+  .imageSide, .serviceRow.alignRight .imageSide { 
+    height: 250px; 
+    min-height: 250px;
+    clip-path: none; /* เอามุมเฉียงออกในมือถือ */
+    flex: none;
+    width: 100%;
+  }
+  
+  .contentSide {
+    padding: 40px 20px;
+    min-width: auto;
+  }
+  
+  .contentSide h2 { 
+    font-size: 2rem; 
+    margin-bottom: 25px;
+  }
+
+  /* ปรับ Grid ในมือถือ */
+  .subServiceGrid {
+    grid-template-columns: repeat(2, 1fr); /* บังคับ 2 คอลัมน์ */
+    gap: 10px;
+  }
+  
+  /* ลดขนาดปุ่มและตัวหนังสือในมือถือเล็กน้อยเพื่อให้พอดีจอ */
+  .serviceItem {
+    height: 110px; 
+  }
+  
+  .serviceText {
+    font-size: 0.9rem;
+    padding: 0 5px;
+  }
+}

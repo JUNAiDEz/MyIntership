@@ -1,0 +1,838 @@
+/* --- Variables & Reset --- */
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;900&display=swap');
+
+:root {
+  /* Palette */
+  --brand-accent: #ffc709;  /* Yellow */
+  --primary-black: #000000; /* Black */
+  --bg-app: #fafafa;        /* Light Gray Background */
+  --bg-card: #ffffff;       /* White */
+  
+  --text-primary: #000000;
+  --text-secondary: #6b7280; /* Gray-500 */
+  
+  --border-default: #e5e7eb; /* Gray-200 */
+  --border-active: #000000;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-glow: 0 4px 20px -2px rgba(255, 199, 9, 0.25); /* Yellow Glow */
+  --shadow-hover: 4px 4px 0px 0px #000000; /* Hard shadow for industrial feel */
+}
+
+.dashboardLayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-app);
+  font-family: 'Prompt', sans-serif;
+  color: var(--text-primary);
+}
+
+/* --- Header (Updated to Black) --- */
+.header {
+  background-color: var(--primary-black); /* เปลี่ยนพื้นหลังเป็นสีดำ */
+  border-bottom: 1px solid #333333; /* เปลี่ยนเส้นขอบเป็นสีเทาเข้ม */
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 70px;
+}
+
+.headerContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logoIcon {
+  background: var(--brand-accent);
+  color: var(--primary-black);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-weight: 900;
+  font-size: 16px;
+  border: 2px solid var(--brand-accent); /* เปลี่ยนขอบเป็นสีเหลืองให้เด่นบนพื้นดำ */
+  box-shadow: none; /* เอาเงาสีดำออกเพราะพื้นหลังดำแล้ว */
+}
+
+.logoText {
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffffff; /* เปลี่ยนตัวหนังสือเป็นสีขาว */
+  text-decoration: none;
+  letter-spacing: -0.5px;
+  text-transform: uppercase;
+}
+
+.logoText span {
+  color: var(--brand-accent);
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+}
+
+/* Navigation (Updated for Dark Header) */
+.navMenu {
+  display: flex;
+  gap: 8px;
+  height: 100%;
+  align-items: center;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  color: #9ca3af; /* เปลี่ยนเป็นสีเทาอ่อนเพื่อให้เห็นชัดบนพื้นดำ */
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  height: 40px;
+}
+
+.navIcon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.navItem:hover {
+  color: var(--primary-black);
+  background-color: var(--brand-accent); /* Hover เป็นสีเหลือง */
+  border-color: var(--brand-accent);
+}
+
+/* Active State: Yellow BG + Black Text */
+.navItem.active {
+  background-color: var(--brand-accent);
+  color: var(--primary-black);
+  font-weight: 700;
+  border: 1px solid var(--brand-accent);
+  box-shadow: 0 0 15px rgba(255, 199, 9, 0.3); /* เปลี่ยนเป็น Glow แทนเงาดำ */
+  transform: translateY(-1px);
+}
+
+/* Dropdown */
+.navDropdownContainer {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  background: white; /* Dropdown ยังคงเป็นสีขาวเพื่อให้ดูง่าย */
+  min-width: 220px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-hover);
+  border: 2px solid var(--primary-black);
+  padding: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.navDropdownContainer.open .dropdownMenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdownItem {
+  display: block;
+  padding: 10px 16px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+
+.dropdownItem:hover {
+  background-color: var(--brand-accent);
+  color: var(--primary-black);
+  font-weight: 700;
+}
+
+/* Header Right (Updated for Dark Header) */
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: #ffffff; /* เปลี่ยนเป็นพื้นหลังสีขาว */
+  padding: 6px 16px;
+  border-radius: 20px;
+  color: var(--text-secondary); /* ไอคอนเป็นสีเทา */
+  margin-right: 10px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.searchBar:focus-within {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px var(--brand-accent);
+}
+
+.searchBar input {
+  border: none;
+  background: transparent;
+  margin-left: 8px;
+  outline: none;
+  font-size: 14px;
+  width: 150px;
+  color: var(--text-primary); /* ตัวหนังสือเป็นสีดำ */
+  font-family: 'Prompt', sans-serif;
+}
+
+.iconButton {
+  background: #171717; /* ปุ่มพื้นหลังดำด้าน */
+  border: 1px solid #333333;
+  color: #ffffff; /* ไอคอนสีขาว */
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.iconButton:hover {
+  border-color: var(--brand-accent);
+  background-color: var(--brand-accent);
+  color: var(--primary-black);
+  box-shadow: 0 0 10px rgba(255, 199, 9, 0.4);
+  transform: translateY(-1px);
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--brand-accent); /* เปลี่ยน Badge เป็นสีเหลือง */
+  color: var(--primary-black);
+  font-size: 10px;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--primary-black);
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 16px;
+  border-left: 1px solid #333333; /* เส้นกั้นสีเทาเข้ม */
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  background: var(--brand-accent);
+  color: var(--primary-black);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border: 2px solid var(--brand-accent);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff; /* ชื่อสีขาว */
+}
+
+.userRole {
+  font-size: 11px;
+  color: #9ca3af; /* Role สีเทา */
+}
+
+.logoutButton {
+  background: #171717;
+  color: #9ca3af;
+  border: 1px solid #333333;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  transition: all 0.2s;
+}
+
+.logoutButton:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+/* --- Main Content --- */
+.mainContent {
+  flex: 1;
+  padding: 32px 0;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* --- Dashboard Home --- */
+.homeContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.welcomeSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.welcomeSection h1 {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--primary-black);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.5px;
+}
+
+.welcomeSection p {
+  color: var(--text-secondary);
+  font-size: 16px;
+  margin: 0;
+}
+
+.dateDisplay {
+  font-size: 14px;
+  color: var(--primary-black);
+  background: var(--brand-accent);
+  padding: 8px 20px;
+  border-radius: 30px;
+  border: 2px solid var(--primary-black);
+  font-weight: 700;
+  box-shadow: 2px 2px 0px var(--primary-black);
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.statCard {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border-default);
+  /* The inline border-top color logic in React will still apply, 
+     but we can enhance the base look */
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.statCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary-black);
+  box-shadow: var(--shadow-glow);
+}
+
+.statContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+}
+
+.statTitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-size: 36px;
+  font-weight: 900;
+  margin-bottom: 4px;
+  color: var(--primary-black) !important; /* Force black for values */
+}
+
+.statSub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+.statIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Dashboard Content Grid */
+.dashboardContentGrid {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 32px;
+}
+
+@media (max-width: 1024px) {
+  .dashboardContentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sectionHeaderTitle {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  color: var(--primary-black);
+  border-left: 5px solid var(--brand-accent);
+  padding-left: 12px;
+  line-height: 1.2;
+}
+
+.quickLinksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.quickLink {
+  background: white;
+  border-radius: 12px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  gap: 16px;
+}
+
+.quickLink:hover {
+  border-color: var(--primary-black);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover); /* Black hard shadow */
+}
+
+.quickLinkIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  /* Use !important to override inline styles if needed, 
+     but React inline styles usually win. 
+     We might want to rely on the inline colors but add a border */
+  border: 2px solid white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.quickLink span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Service Preview */
+.servicePreviewSection {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm);
+}
+
+.servicePreviewSection h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  color: var(--primary-black);
+}
+
+.serviceTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.serviceTag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  padding: 10px 20px;
+  border-radius: 30px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--border-default);
+  transition: all 0.2s;
+}
+
+.serviceTag:hover {
+  background: var(--brand-accent);
+  border-color: var(--primary-black);
+  color: var(--primary-black);
+  box-shadow: 2px 2px 0px var(--primary-black);
+  transform: translateY(-2px);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: block;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Side Panel */
+.sidePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.infoCard {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid var(--border-default);
+  /* Optional: Industrial header strip */
+  border-top: 4px solid var(--primary-black);
+}
+
+.infoCard h3 {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary-black);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 12px;
+}
+
+.systemStatusList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.systemStatusList li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.systemStatusList li:last-child {
+  border-bottom: none;
+}
+
+.statusOk span:last-child { color: #16a34a; font-weight: 700; background: #dcfce7; padding: 2px 8px; border-radius: 4px; }
+.statusWarning span:last-child { color: #ea580c; font-weight: 700; background: #ffedd5; padding: 2px 8px; border-radius: 4px; }
+
+.activityList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.activityList li {
+  position: relative;
+  padding-left: 24px;
+  padding-bottom: 24px;
+  border-left: 2px solid #f3f4f6;
+}
+
+.activityList li:last-child { border-left: none; }
+.activityList li::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--brand-accent);
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px var(--primary-black);
+  border-radius: 50%;
+}
+
+.time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.activityList p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.activityList p b {
+  color: var(--primary-black);
+  background: rgba(255, 199, 9, 0.2);
+  padding: 0 4px;
+}
+
+/* --- Service Cards (Fitment, Maintenance etc) --- */
+.sectionPage {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.sectionHeader {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.sectionTitle {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--primary-black);
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.iconBadge {
+  background: var(--brand-accent);
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 26px;
+  border: 2px solid var(--primary-black);
+  box-shadow: 3px 3px 0px var(--primary-black);
+}
+
+.sectionSubtitle {
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.serviceCard {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-decoration: none;
+  border: 1px solid var(--border-default);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.serviceCard:hover {
+  transform: translateY(-6px);
+  border-color: var(--primary-black);
+  box-shadow: var(--shadow-hover); /* Black hard shadow */
+}
+
+.serviceIconWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  font-size: 28px;
+  transition: transform 0.3s;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.serviceCard:hover .serviceIconWrapper {
+  transform: scale(1.1) rotate(5deg);
+  background: var(--brand-accent) !important;
+  color: var(--primary-black) !important;
+  border: 2px solid var(--primary-black);
+}
+
+.serviceContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.serviceTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-black);
+  margin: 0 0 8px 0;
+}
+
+.serviceDesc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 24px 0;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.serviceLinkText {
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  color: var(--primary-black);
+  background: #f3f4f6;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.serviceCard:hover .serviceLinkText {
+  background: var(--primary-black);
+  color: var(--brand-accent);
+}
+
+/* Unified Card Theme - Industrial Style override */
+/* We keep the classes for specificity but unify the look */
+.cardOrange, .cardGreen, .cardRed, .cardPurple {
+  /* No top border by default for cleaner look, appearing on hover maybe? 
+     Or stick to the prompt's idea of subtle difference. */
+}
+
+/* Specific Icon colors (Normal state) */
+.cardOrange .serviceIconWrapper { background: #fff7ed; color: #ea580c; }
+.cardGreen .serviceIconWrapper { background: #f0fdf4; color: #16a34a; }
+.cardRed .serviceIconWrapper { background: #fef2f2; color: #dc2626; }
+.cardPurple .serviceIconWrapper { background: #faf5ff; color: #9333ea; }
+
+/* Placeholder */
+.placeholderContent {
+  text-align: center;
+  padding: 80px;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed var(--border-default);
+}
+
+.placeholderIcon {
+  font-size: 64px;
+  color: #e5e7eb;
+  margin-bottom: 24px;
+}
+
+/* Footer */
+.footer {
+  background: white;
+  border-top: 1px solid var(--border-default);
+  padding: 32px 0;
+  margin-top: auto;
+}
+
+.footerContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.footerLinks {
+  display: flex;
+  gap: 24px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

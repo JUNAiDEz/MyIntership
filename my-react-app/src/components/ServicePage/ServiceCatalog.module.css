@@ -1,0 +1,179 @@
+/* ServiceCatalog.module.css */
+
+.catalogSection {
+  padding: 80px 20px;
+  background: #f4f4f4;
+  color: #333;
+}
+
+.relatedTitle {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #000;
+  font-weight: 800;
+}
+
+.catalogGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  column-gap: 35px;
+  row-gap: 80px;
+  margin-bottom: 100px;
+}
+
+.servicePackageCard {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  transition: 0.3s;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  cursor: pointer;
+}
+
+.servicePackageCard:hover {
+  border-color: #ffc709;
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+}
+
+.cardImageWrapper {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.cardImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.servicePackageCard:hover .cardImg {
+  transform: scale(1.1);
+}
+
+.cardOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.servicePackageCard:hover .cardOverlay {
+  opacity: 1;
+}
+
+.viewBtn {
+  background: #ffc709;
+  color: #000;
+  padding: 10px 25px;
+  border-radius: 25px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.cardInfo {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.pkgBrand {
+  font-size: 0.8rem;
+  color: #000;
+  background-color: #ffc709;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  display: inline-block;
+  border: none;
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.pkgModel {
+  font-size: 1.3rem;
+  margin: 10px 0;
+  color: #000;
+  font-weight: 800;
+  line-height: 1.2;
+  flex-grow: 1;
+}
+
+/* 🔥 ส่วนที่แก้ไข: จัด Container ราคา */
+.pkgPriceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end; /* ให้ราคาอยู่ฐานล่างเสมอ */
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px dashed #ddd;
+}
+
+/* 🔥 ส่วนที่แก้ไข: ปรับตัวเลขราคาให้รองรับหลายบรรทัด */
+.pkgMainPrice {
+  font-size: 1.2rem; /* ลดขนาดลงหน่อยเพื่อให้สวยงามเมื่อมี 2 บรรทัด */
+  color: #d32f2f;
+  font-weight: 800;
+  text-align: right; /* จัดชิดขวา */
+  display: flex;
+  flex-direction: column; /* เรียงเป็นแนวตั้ง */
+  gap: 2px;
+  line-height: 1.3;
+}
+
+/* Pagination */
+.paginationContainer {
+  margin-top: 50px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pageBtn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: 0.3s;
+  border-radius: 50%;
+  font-weight: 600;
+}
+
+.pageBtn:hover {
+  border-color: #333;
+  background: #f0f0f0;
+}
+
+.activePageBtn {
+  background: #ffc709;
+  color: #000;
+  border-color: #ffc709;
+  font-weight: bold;
+}
+.activePageBtn:hover {
+  background: #e0b000;
+}

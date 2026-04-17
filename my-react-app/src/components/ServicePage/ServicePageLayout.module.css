@@ -1,0 +1,95 @@
+/* src/components/ServicesPage/ServicePageLayout.module.css */
+
+/* --- GLOBAL THEME --- */
+/* 🟢 เปลี่ยนชื่อ Class เป็น .pageContainer เพื่อให้ใช้ได้ทุกหน้า */
+.pageContainer {
+  background-color: #0a0a0a; /* สีดำพื้นหลังหลัก */
+  color: #fff;
+  min-height: 100vh;
+  font-family: 'Kanit', sans-serif;
+}
+
+.mainContent {
+  padding-bottom: 60px;
+}
+
+/* --- RELATED SERVICES (ส่วน Thumbnail Link ไปหน้าอื่น) --- */
+.relatedServices {
+  padding: 80px 0;
+  background: #0a0a0a;
+}
+
+.relatedTitle {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.heroThumbnails {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.thumbnailCard {
+  width: 280px;
+  height: 180px;
+  background: #111;
+  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: 0.4s;
+  /* Skew Design */
+  transform: skewX(-10deg); 
+  border-radius: 10px;
+}
+
+.thumbnailText {
+  transform: skewX(10deg);
+  text-align: center;
+  z-index: 2;
+}
+
+.thumbnailCard:hover {
+  background: #ffc709;
+  border-color: #ffc709;
+  transform: skewX(-10deg) translateY(-10px);
+  box-shadow: 0 10px 30px rgba(255, 199, 9, 0.2);
+}
+
+.thumbnailCard:hover .thumbnailText h3,
+.thumbnailCard:hover .thumbnailText p { 
+  color: #000; 
+}
+
+.thumbnailText h3 { 
+  color: #fff; 
+  font-size: 1.5rem; 
+  margin: 0; 
+  font-weight: 800; 
+  text-transform: uppercase; 
+}
+
+.thumbnailText p { 
+  color: #888; 
+  margin: 5px 0 0; 
+}
+
+/* --- Location Wrapper --- */
+.ourLocation {
+  text-align: center;
+}
+
+/* --- Responsive for Layout --- */
+@media (max-width: 768px) {
+  .thumbnailCard { transform: none; width: 100%; height: 120px; }
+  .thumbnailText { transform: none; }
+}
