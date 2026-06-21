@@ -133,8 +133,8 @@ module.exports = { checkPermission };
 
 ตัวอย่างการเรียกใช้งานใน Routes
 
-const { verifyToken } = require('../../middleware/auth');
-const { checkPermission } = require('../../middleware/checkPermission');
+// หมายเหตุ: checkPermission อยู่รวมใน middleware/auth.js (ไฟล์ checkPermission.js แยกถูกลบแล้ว — เป็น dead code)
+const { verifyToken, checkPermission } = require('../../middleware/auth');
 
 // ฟังก์ชันเพิ่มข้อมูลรถ: ต้องมีสิทธิ์ 'cars' -> 'create'
 router.post(

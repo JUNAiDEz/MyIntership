@@ -8,7 +8,7 @@ exports.getPromotionBySlug = async (req, res) => {
     res.json(promo);
   } catch (error) {
     console.error('getPromotionBySlug error:', error);
-    res.status(500).json({ message: error.message, stack: error.stack });
+    res.status(500).json({ message: error.message });
   }
 };
 // สร้าง Promotion, Promotion Product, Promotion Service
@@ -67,7 +67,7 @@ exports.getActivePromotions = async (req, res) => {
     // Log full error server-side for debugging
     console.error('getActivePromotions error:', error);
     // Return stack in response temporarily to aid debugging (remove in production)
-    res.status(500).json({ message: error.message, stack: error.stack });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -140,7 +140,7 @@ exports.createPromotion = async (req, res) => {
     res.status(201).json(result);
   } catch (error) {
     console.error('createPromotion error:', error);
-    res.status(500).json({ message: error.message, stack: error.stack });
+    res.status(500).json({ message: error.message });
   }
   };
 
@@ -207,7 +207,7 @@ exports.createPromotion = async (req, res) => {
       res.json(result);
     } catch (error) {
       console.error('updatePromotion error:', error);
-      res.status(500).json({ message: error.message, stack: error.stack });
+      res.status(500).json({ message: error.message });
     }
   };
 
@@ -228,7 +228,7 @@ exports.createPromotion = async (req, res) => {
       res.json({ message: 'Promotion deleted' });
     } catch (error) {
       console.error('deletePromotion error:', error);
-      res.status(500).json({ message: error.message, stack: error.stack });
+      res.status(500).json({ message: error.message });
     }
   };
 
@@ -244,6 +244,6 @@ exports.createPromotion = async (req, res) => {
       res.json({ promotion_id: promo.promotion_id, is_active: promo.is_active });
     } catch (error) {
       console.error('togglePromotionStatus error:', error);
-      res.status(500).json({ message: error.message, stack: error.stack });
+      res.status(500).json({ message: error.message });
     }
   };

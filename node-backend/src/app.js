@@ -17,9 +17,15 @@ app.set('trust proxy', 1);
 // 1. Global Middleware
 // ====================================================
 
-// ✅ 1. ตั้งค่า CORS (อนุญาตให้ Fronteภ4nd เข้าถึงได้)
+// ✅ 1. ตั้งค่า CORS — จำกัดโดเมนผ่าน env CORS_ORIGINS (comma-separated); ไม่ตั้ง = '*' (พร้อมเตือน)
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+  : '*';
+if (corsOrigins === '*') {
+  console.warn('⚠️  CORS origin = * (อนุญาตทุกโดเมน) — ตั้ง CORS_ORIGINS ใน env เพื่อจำกัดบน production');
+}
 app.use(cors({
-  origin: '*',
+  origin: corsOrigins,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
   credentials: false,
@@ -40,9 +46,10 @@ if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
 
-// Body Parser - เพิ่ม limit สำหรับ Base64 images (50MB)
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+// Body Parser - limit ปรับได้ผ่าน env BODY_LIMIT (default 25mb; ลดจาก 100mb เพื่อกัน DoS)
+const BODY_LIMIT = process.env.BODY_LIMIT || '25mb';
+app.use(express.json({ limit: BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 
 // ====================================================
 // 2. Static Files
