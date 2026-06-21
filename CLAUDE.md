@@ -55,4 +55,6 @@ npm run dev          # http://localhost:5000 (nodemon)
 | `my-react-app/Docs/MIGRATION_STATUS.md` | เช็กลิสต์ความคืบหน้า |
 | `my-react-app/Docs/GLOSSARY.md` | ศัพท์เฉพาะธุรกิจ |
 | `my-react-app/Docs/COST_OPTIMIZATION.md` | แนวทางประหยัดงบ (infra + dev) |
-| `node-backend/src/docs/RBAC_ARCHITECTURE.md` | ระบบสิทธิ์ |
+| `node-backend/src/docs/RBAC_ARCHITECTURE.md` | ระบบสิทธิ์ + route auth coverage |
+| `node-backend/src/docs/ENV_SETUP.md` | env vars ทั้งหมด + เช็กลิสต์ก่อนขึ้น prod |
+| `TODO.md` (root) | งานที่เหลือต้องทำต่อ (FE/BE/infra) จัดลำดับแล้ว |
