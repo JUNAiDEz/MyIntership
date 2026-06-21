@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
-import { allPromotionsData } from './PromotionPage';
+import { allPromotionsData, type PromotionItem, type PromoLineItem } from './PromotionPage';
 import { apiGet } from '@/utils/api';
 
 interface PromotionDetailPageProps {
@@ -17,14 +17,14 @@ const wrapperCls = 'flex min-h-screen flex-col bg-[#fafafa]';
 function PromotionDetailPage({ onLogout }: PromotionDetailPageProps) {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const [promotion, setPromotion] = useState<any>(null);
+  const [promotion, setPromotion] = useState<PromotionItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
 
-    apiGet<any>(`/api/sales/promotions/slug/${slug}`)
+    apiGet<(PromotionItem & { message?: string }) | null>(`/api/sales/promotions/slug/${slug}`)
       .then((data) => {
         if (data && !data.message) {
           if (isMounted) setPromotion(data);
@@ -112,7 +112,7 @@ function PromotionDetailPage({ onLogout }: PromotionDetailPageProps) {
                 <h4 className="mb-6 flex items-center text-[1.25rem] font-extrabold uppercase text-black before:mr-2.5 before:inline-block before:h-3 before:w-3 before:border before:border-black before:bg-accent before:content-['']">INCLUDED ITEMS</h4>
                 <div className="grid grid-cols-1 gap-4 min-[481px]:grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
                   {items.length === 0 && <p className="text-[#6b7280]">ไม่มีข้อมูลรายการสินค้า</p>}
-                  {items.map((item: any, idx: number) => (
+                  {items.map((item: PromoLineItem, idx: number) => (
                     <div className="group border border-black bg-white transition-all duration-200 hover:-translate-x-[3px] hover:-translate-y-[3px] hover:shadow-[5px_5px_0px_#000]" key={idx}>
                       <div className="flex flex-col items-center p-4 text-center">
                         {item.imageUrl ? (

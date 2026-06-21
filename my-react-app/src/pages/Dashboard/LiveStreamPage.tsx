@@ -2,16 +2,29 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 // [CHANGE] Use Global Theme
 import styles from '../../styles/AdminTheme.module.css';
 import { FaVideo, FaPlay, FaStop, FaSync, FaExclamationTriangle, FaCircle } from 'react-icons/fa';
+import type { FormFieldEvent } from '@/types';
 
 const API_BASE = 'https://apitop.gt7dev.com';
 
-const LiveStreamPage = () => {
-  const videoRef = useRef<any>(null);
-  const hlsRef = useRef<any>(null);
+/** ข้อมูลกล้องที่ backend ส่งกลับมาจาก /api/cameras */
+interface Camera {
+  id: string | number;
+  name?: string;
+  ip_address?: string;
+  rtsp_url?: string;
+  is_active?: number | boolean;
+}
 
-  const [cameras, setCameras] = useState<any[]>([]);
+// hls.js โหลดแบบ dynamic import เลยใช้ type จาก instance ของ lib (ผ่าน import type)
+type HlsInstance = import('hls.js').default;
+
+const LiveStreamPage = () => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<HlsInstance | null>(null);
+
+  const [cameras, setCameras] = useState<Camera[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState('');
-  const [streamUrl, setStreamUrl] = useState<any>(null);
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,7 +41,7 @@ const LiveStreamPage = () => {
     try {
       const res = await fetch(`${API_BASE}/api/cameras`);
       if (!res.ok) throw new Error('ไม่สามารถโหลดข้อมูลกล้องได้');
-      const data = await res.json();
+      const data = (await res.json()) as Camera[];
       setCameras(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -50,7 +63,7 @@ const LiveStreamPage = () => {
         headers
       });
       if (!res.ok) throw new Error('ไม่สามารถเริ่มสตรีมได้');
-      const data = await res.json();
+      const data = (await res.json()) as { hls: string };
       setStreamUrl(`${API_BASE}${data.hls}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -87,11 +100,12 @@ const LiveStreamPage = () => {
 
   // Initialize HLS when streamUrl changes
   useEffect(() => {
-    if (!videoRef.current || !streamUrl) return;
+    const videoEl = videoRef.current;
+    if (!videoEl || !streamUrl) return;
 
     // Check if browser supports native HLS
-    if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      videoRef.current.src = streamUrl;
+    if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      videoEl.src = streamUrl;
     } else {
       // Use HLS.js for other browsers
       const loadHls = async () => {
@@ -100,7 +114,7 @@ const LiveStreamPage = () => {
         if (Hls.isSupported()) {
           const hls = new Hls();
           hls.loadSource(streamUrl);
-          hls.attachMedia(videoRef.current);
+          hls.attachMedia(videoEl);
           hlsRef.current = hls;
         }
       };
@@ -116,7 +130,7 @@ const LiveStreamPage = () => {
     };
   }, [streamUrl]);
 
-  const selectedCamera = cameras.find((c: any) => c.id === selectedCameraId);
+  const selectedCamera = cameras.find((c: Camera) => c.id === selectedCameraId);
 
   return (
     <div className={styles.pageContainer}>
@@ -158,11 +172,11 @@ const LiveStreamPage = () => {
                 <select
                     className={styles.formSelect}
                     value={selectedCameraId}
-                    onChange={(e: any) => setSelectedCameraId(e.target.value)}
+                    onChange={(e: FormFieldEvent) => setSelectedCameraId(e.target.value)}
                     disabled={loading}
                 >
                     <option value="">-- Select Camera --</option>
-                    {cameras.map((cam: any) => (
+                    {cameras.map((cam: Camera) => (
                     <option key={cam.id} value={cam.id}>
                         {cam.name} ({cam.ip_address || 'N/A'})
                     </option>

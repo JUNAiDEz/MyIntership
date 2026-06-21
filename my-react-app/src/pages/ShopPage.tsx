@@ -8,6 +8,20 @@ import {
   FaChevronRight, FaChevronLeft, FaTools, FaCarBattery, FaCogs, FaOilCan, FaCompactDisc, FaCar,
 } from 'react-icons/fa';
 import { Helmet } from 'react-helmet-async';
+import type { ProductImage } from '@/types';
+
+interface ShopApiProduct {
+  product_template_id?: number | string;
+  id?: number | string;
+  product_name?: string;
+  name?: string;
+  slug?: string;
+  price?: number | string;
+  old_price?: number | string;
+  discount_percent?: number | string;
+  images?: ProductImage[];
+  [key: string]: unknown;
+}
 
 interface ShopProduct {
   id: number | string;
@@ -16,7 +30,7 @@ interface ShopProduct {
   oldPrice: string;
   discount: string;
   img: string;
-  raw: any;
+  raw: ShopApiProduct;
 }
 
 const ShopPage = ({ onLogout }: { onLogout?: () => void }) => {
@@ -34,17 +48,17 @@ const ShopPage = ({ onLogout }: { onLogout?: () => void }) => {
   const { data: products = [], isLoading: loading, isError: error } = useQuery({
     queryKey: ['shop-products'],
     queryFn: async (): Promise<ShopProduct[]> => {
-      const raw = await apiGet<any>('/api/inventory/products?active=true');
+      const raw = await apiGet<ShopApiProduct[]>('/api/inventory/products?active=true');
       if (!Array.isArray(raw)) return [];
-      return raw.map((item: any) => {
+      return raw.map((item) => {
         let img = 'https://pngimg.com/uploads/car_wheel/car_wheel_PNG23316.png';
         if (item.images && item.images.length > 0) {
-          const primary = item.images.find((im: any) => im.is_primary);
+          const primary = item.images.find((im) => im.is_primary);
           img = primary ? primary.image_url : item.images[0].image_url;
         }
         return {
-          id: item.product_template_id || item.id,
-          name: item.product_name || item.name,
+          id: item.product_template_id || item.id || '',
+          name: item.product_name || item.name || '',
           price: item.price ? `฿${item.price}` : '',
           oldPrice: item.old_price ? `฿${item.old_price}` : '',
           discount: item.discount_percent ? `${item.discount_percent}% OFF` : '',

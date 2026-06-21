@@ -23,11 +23,56 @@ interface PublicSiteProps {
   onLogout?: () => void;
 }
 
+/** รูปย่อยที่ backend อาจส่งมาในสินค้า/บริการ */
+interface RawImage {
+  image_url?: string;
+  url?: string;
+}
+
+/** สินค้าดิบจาก /api/inventory/products (โครงสร้างไม่ตายตัวข้าม endpoint) */
+interface RawProduct {
+  product_template_id?: number | string;
+  id?: number | string;
+  product_id?: number | string;
+  product_name?: string;
+  title?: string;
+  name?: string;
+  images?: RawImage[];
+  imageUrl?: string;
+  image_url?: string;
+  variants?: { unit_price?: number | string }[];
+  price?: number | string;
+  base_price?: number | string;
+  discount?: number | string;
+  discount_text?: string;
+}
+
+/** บริการดิบจาก /api/services */
+interface RawService {
+  service_id?: number | string;
+  id?: number | string;
+  service_name?: string;
+  title?: string;
+  name?: string;
+  images?: RawImage[];
+  imageUrl?: string;
+  image_url?: string;
+  base_labor_cost?: number | string;
+  price?: number | string;
+  pricings?: { price?: number | string }[];
+  discount?: number | string;
+}
+
+/** response ที่อาจเป็น array ตรงๆ หรือห่อด้วย { items } */
+interface ListEnvelope<T> {
+  items?: T[];
+}
+
 const featureCardCls =
   'group relative overflow-hidden rounded-lg border border-themed bg-bg-card p-[30px] shadow-[var(--card-shadow)] transition-all duration-300 hover:-translate-y-2.5 hover:border-accent hover:shadow-[0_10px_30px_rgba(255,199,9,0.15)]';
 
 function PublicSite({ onLogout }: PublicSiteProps) {
-  const mapProduct = (p: any): Product => ({
+  const mapProduct = (p: RawProduct): Product => ({
     id: p.product_template_id || p.id || p.product_id,
     title: p.product_name || p.title || p.name || '',
     imageUrl: getImageUrl((p.images && (p.images[0]?.image_url || p.images[0]?.url)) || p.imageUrl || p.image_url || ''),
@@ -36,7 +81,7 @@ function PublicSite({ onLogout }: PublicSiteProps) {
     raw: p,
   });
 
-  const mapService = (s: any): Product => ({
+  const mapService = (s: RawService): Product => ({
     id: s.service_id || s.id,
     title: s.service_name || s.title || s.name || '',
     imageUrl: getImageUrl((s.images && (s.images[0]?.image_url || s.images[0]?.url)) || s.imageUrl || s.image_url || ''),
@@ -48,8 +93,8 @@ function PublicSite({ onLogout }: PublicSiteProps) {
   const { data: popularProducts = [], isError: prodErr } = useQuery({
     queryKey: ['home-products'],
     queryFn: async (): Promise<Product[]> => {
-      const raw = await apiGet<any>('/api/inventory/products?active=true');
-      const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+      const raw = await apiGet<RawProduct[] | ListEnvelope<RawProduct>>('/api/inventory/products?active=true');
+      const list: RawProduct[] = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
       return list.map(mapProduct).slice(0, 8);
     },
   });
@@ -57,8 +102,8 @@ function PublicSite({ onLogout }: PublicSiteProps) {
   const { data: popularServices = [], isError: svcErr } = useQuery({
     queryKey: ['home-services'],
     queryFn: async (): Promise<Product[]> => {
-      const raw = await apiGet<any>('/api/services');
-      const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+      const raw = await apiGet<RawService[] | ListEnvelope<RawService>>('/api/services');
+      const list: RawService[] = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
       return list.map(mapService).slice(0, 8);
     },
   });

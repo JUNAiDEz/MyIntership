@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ChangeEvent, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { FormFieldEvent, ModalState } from '@/types';
 import styles from '../../styles/AdminTheme.module.css'; // ปรับ Path ให้ตรงกับโปรเจกต์ของคุณ
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaCamera, FaImage } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
@@ -10,6 +11,23 @@ import { HasPermission } from '../../utils/ProtectedRoute';
 import DashboardHeader from '../../components/DashboardHeader';
 
 const getToken = () => localStorage.getItem('adminToken');
+
+/** หนึ่งตัวแทนจำหน่าย/แบรนด์ ตาม field จริงจาก backend */
+interface Dealer {
+  id: number;
+  name: string;
+  image_url?: string;
+  display_order: number;
+  is_active: boolean;
+}
+
+/** state ฟอร์มสร้าง/แก้ไข dealer (display_order เป็น string|number เพราะ input bind ค่า string) */
+interface DealerForm {
+  name: string;
+  image_url: string;
+  display_order: number | string;
+  is_active: boolean;
+}
 
 // รับ props onLogout มาเผื่อส่งต่อให้ Header
 export default function DealerManagementPage({ onLogout }: { onLogout?: () => void }) {
@@ -24,9 +42,9 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
   const pageSize = 12;
 
   // --- Modal & Form State ---
-  const [modal, setModal] = useState<any>({ open: false, mode: 'view', dealer: null });
+  const [modal, setModal] = useState<{ open: boolean; mode: ModalState['mode']; dealer: Dealer | null }>({ open: false, mode: 'view', dealer: null });
 
-  const [createForm, setCreateForm] = useState<any>({
+  const [createForm, setCreateForm] = useState<DealerForm>({
     name: '',
     image_url: '',
     display_order: 0,
@@ -43,11 +61,11 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
   }), []);
 
   // --- Helper: Convert File to Base64 ---
-  const convertToBase64 = (file: any) => {
+  const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const fileReader = new FileReader();
       fileReader.readAsDataURL(file);
-      fileReader.onload = () => resolve(fileReader.result);
+      fileReader.onload = () => resolve(fileReader.result as string);
       fileReader.onerror = (error) => reject(error);
     });
   };
@@ -58,16 +76,17 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/dealers`, { headers });
       if (!res.ok) throw new Error('Failed to fetch dealers');
-      const result = await res.json();
+      const result = await res.json() as Dealer[] | { data?: Dealer[] };
       // เรียงลำดับตาม display_order จากน้อยไปมาก
-      return (Array.isArray(result) ? result : result.data || []).sort((a: any, b: any) => a.display_order - b.display_order);
+      const list: Dealer[] = Array.isArray(result) ? result : result.data || [];
+      return [...list].sort((a: Dealer, b: Dealer) => a.display_order - b.display_order);
     },
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['dealers'] });
 
   // --- 2. Filter & Pagination ---
-  const filteredDealers = dealers.filter((d: any) => {
+  const filteredDealers = dealers.filter((d: Dealer) => {
     if (!debouncedSearch) return true;
     return d.name.toLowerCase().includes(debouncedSearch.toLowerCase());
   });
@@ -77,12 +96,12 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
   const visible = filteredDealers.slice((page - 1) * pageSize, page * pageSize);
 
   // --- 3. Actions ---
-  const handleImageUpload = async (file: any) => {
+  const handleImageUpload = async (file: File) => {
     if (!file) return;
     setUploadingImage(true);
     try {
       const base64 = await convertToBase64(file);
-      setCreateForm((prev: any) => ({ ...prev, image_url: base64 }));
+      setCreateForm((prev: DealerForm) => ({ ...prev, image_url: base64 }));
     } catch (err) {
       console.error(err);
       alert('เกิดข้อผิดพลาดในการแปลงรูปภาพ');
@@ -115,26 +134,26 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
       });
 
       if (!res.ok) {
-         const errData = await res.json();
+         const errData = await res.json() as { message?: string; error?: string };
          throw new Error(errData.message || errData.error || 'บันทึกไม่สำเร็จ');
       }
       return res.json();
     },
     onSuccess: () => { refresh(); closeModal(); },
-    onError: (err: any) => setCreateError(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => setCreateError(err instanceof Error ? err.message : String(err)),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => {
+    mutationFn: async (id: number) => {
       const res = await fetch(`${API_URL}/api/dealers/${id}`, { method: 'DELETE', headers });
       if(!res.ok) throw new Error('ลบไม่สำเร็จ');
       return res.json();
     },
     onSuccess: refresh,
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCreateError('');
     if (!createForm.name.trim()) {
@@ -144,12 +163,12 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
     saveMutation.mutate();
   };
 
-  const handleDelete = (id: any) => {
+  const handleDelete = (id: number) => {
     if (!window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบตัวแทนจำหน่ายรายนี้?')) return;
     deleteMutation.mutate(id);
   };
 
-  const openModal = (mode: any, item: any = null) => {
+  const openModal = (mode: ModalState['mode'], item: Dealer | null = null) => {
     if (mode === 'create') {
       setCreateForm({
         name: '',
@@ -200,7 +219,7 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
                       className={styles.searchInput}
                       placeholder="ค้นหาชื่อแบรนด์..."
                       value={search}
-                      onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                      onChange={(e: FormFieldEvent) => { setSearch(e.target.value); setPage(1); }}
                   />
               </div>
           </div>
@@ -214,7 +233,7 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', padding: '10px 0' }}>
               {visible.length === 0 && <div style={{gridColumn: '1 / -1', textAlign:'center', padding: '30px', background: '#fff', borderRadius: '8px'}}>ไม่พบข้อมูลตัวแทนจำหน่าย</div>}
 
-              {visible.map((d: any) => (
+              {visible.map((d: Dealer) => (
                 <div key={d.id}
                   onClick={() => openModal('edit', d)}
                   style={{
@@ -339,7 +358,7 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
                       <label className={styles.formLabel}>ชื่อแบรนด์ *</label>
                       <input
                         className={styles.formInput} type="text" value={createForm.name} required
-                        onChange={e => setCreateForm({...createForm, name: e.target.value})}
+                        onChange={(e: FormFieldEvent) => setCreateForm({...createForm, name: e.target.value})}
                         placeholder="ex. BILSTEIN, Brembo"
                       />
                     </div>
@@ -362,7 +381,7 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#ffc709', color: '#000', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}>
                               <FaCamera /> {createForm.image_url ? 'เปลี่ยนรูปโลโก้' : 'อัปโหลดโลโก้'}
-                              <input type="file" accept="image/*" onChange={e => { if (e.target.files && e.target.files[0]) handleImageUpload(e.target.files[0]); }} disabled={uploadingImage} style={{ display: 'none' }} />
+                              <input type="file" accept="image/*" onChange={(e: ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) handleImageUpload(e.target.files[0]); }} disabled={uploadingImage} style={{ display: 'none' }} />
                           </label>
                           <span style={{ fontSize: '0.8rem', color: '#888' }}>
                               *แนะนำขนาดรูปภาพ 225x225 px
@@ -376,7 +395,7 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
                           <label className={styles.formLabel}>ลำดับการแสดงผล (ยิ่งน้อยยิ่งขึ้นก่อน)</label>
                           <input
                               className={styles.formInput} type="number" value={createForm.display_order} required
-                              onChange={e => setCreateForm({...createForm, display_order: e.target.value})}
+                              onChange={(e: FormFieldEvent) => setCreateForm({...createForm, display_order: e.target.value})}
                           />
                         </div>
 
@@ -385,7 +404,7 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
                           <select
                               className={styles.formInput}
                               value={createForm.is_active === true ? 'true' : 'false'}
-                              onChange={e => setCreateForm({...createForm, is_active: e.target.value === 'true'})}
+                              onChange={(e: FormFieldEvent) => setCreateForm({...createForm, is_active: e.target.value === 'true'})}
                           >
                               <option value="true">แสดงผล (Active)</option>
                               <option value="false">ซ่อน (Inactive)</option>

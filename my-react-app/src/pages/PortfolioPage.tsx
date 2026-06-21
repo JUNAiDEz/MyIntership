@@ -21,6 +21,38 @@ interface CarProject {
   services: ProjectCategory[];
 }
 
+/** category ดิบจาก backend (key ไม่ตายตัว) */
+interface RawCategory {
+  portfolio_category_id?: number | string;
+  id?: number | string;
+  category_name?: string;
+  title?: string;
+}
+
+/** project ดิบจาก /api/portfolio/projects */
+interface RawProject {
+  project_id?: number | string;
+  id?: number | string;
+  slug?: string;
+  title?: string;
+  completion_date?: string;
+  year?: number | string;
+  car_model?: { model_name?: string };
+  model?: string;
+  cover_image_url?: string;
+  image?: string;
+  description?: string;
+  summary?: string;
+  categories?: RawCategory[];
+  services?: RawCategory[];
+}
+
+/** response มาตรฐานของ endpoint portfolio */
+interface PortfolioResponse {
+  success?: boolean;
+  data?: RawProject[];
+}
+
 const PortfolioFilter = ({ services, activeFilter, onFilterChange }: { services: string[]; activeFilter: string; onFilterChange: (s: string) => void }) => (
   <div className="relative z-[2] mb-[50px] flex flex-wrap justify-center gap-[15px] px-5">
     {services.map((service) => (
@@ -81,18 +113,18 @@ export default function PortfolioPage({ onLogout }: PortfolioPageProps) {
 
   useEffect(() => {
     setLoading(true);
-    apiGet<any>('/api/portfolio/projects')
+    apiGet<PortfolioResponse>('/api/portfolio/projects')
       .then((res) => {
         if (res && res.success && Array.isArray(res.data)) {
-          setCars(res.data.map((p: any) => ({
-            id: p.project_id || p.id,
+          setCars(res.data.map((p: RawProject) => ({
+            id: p.project_id || p.id || '',
             slug: p.slug,
             title: p.title,
             year: p.completion_date ? new Date(p.completion_date).getFullYear() : p.year,
             model: p.car_model?.model_name || p.model || 'Custom Build',
             image: p.cover_image_url || p.image,
             summary: p.description || p.summary || '',
-            services: (p.categories || p.services || []).map((c: any) => ({ id: c.portfolio_category_id || c.id, title: c.category_name || c.title })),
+            services: (p.categories || p.services || []).map((c: RawCategory) => ({ id: c.portfolio_category_id || c.id, title: c.category_name || c.title })),
           })));
         } else {
           setCars([]);

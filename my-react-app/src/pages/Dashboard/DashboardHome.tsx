@@ -3,7 +3,15 @@ import styles from './Dashboard.module.css'; // <-- ใช้ CSS หลัก�
 import { FaSearch } from 'react-icons/fa';
 
 // Mock Data สำหรับตาราง
-const mockOrderItems = [
+interface OrderItem {
+  id: number;
+  name: string;
+  qty: number;
+  discount: number;
+  price: number;
+}
+
+const mockOrderItems: OrderItem[] = [
   { id: 1, name: 'น้ำมัน MOYIF', qty: 1, discount: 0, price: 20.00 },
   { id: 2, name: 'โช้ค REVO 4X4 8 นิ้ว', qty: 1, discount: 0, price: 750.00 },
   { id: 3, name: 'มือเปิด REVO-VIGO YDBHBRTMX', qty: 1, discount: 0, price: 100.00 },
@@ -72,7 +80,7 @@ function DashboardHome() {
                 </tr>
               </thead>
               <tbody>
-                {mockOrderItems.map((item: any, index: number) => (
+                {mockOrderItems.map((item: OrderItem, index: number) => (
                   <tr key={item.id}>
                     <td>{index + 1}</td>
                     <td>{item.name}</td>

@@ -9,6 +9,46 @@ import { apiGet } from '@/utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// ---- local types สำหรับ response ของหน้านี้ ----
+interface VehicleVariant {
+  variant_name?: string;
+  sku?: string;
+  unit_price?: number | string;
+  stock_quantity?: number;
+  [key: string]: unknown;
+}
+
+interface VehicleData {
+  car_model_id?: number | string;
+  model_name?: string;
+  description?: string;
+  note?: string;
+  brand_id?: number | string;
+  brand?: { brand_name?: string };
+  variants?: VehicleVariant[];
+  images?: Array<{ url?: string; image_url?: string }>;
+  image_url?: string;
+  [key: string]: unknown;
+}
+
+interface ModelOption {
+  car_model_id?: number | string;
+  model_name?: string;
+  slug?: string;
+  [key: string]: unknown;
+}
+
+interface RelatedService {
+  id?: number | string;
+  stage?: string;
+  name?: string;
+  price?: number | string;
+  car_model_id?: number | string;
+  service_slug?: string;
+  slug?: string;
+  [key: string]: unknown;
+}
+
 // .btnChangeModel
 const btnChangeModelCls =
   'flex items-center gap-2 rounded-lg bg-[#ffc709] px-4 py-2 text-[0.95rem] font-bold text-black no-underline transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_4px_15px_rgba(255,199,9,0.3)]';
@@ -29,12 +69,12 @@ const serviceCardCls =
 const btnSecondaryCls =
   'mt-5 rounded-[30px] border-2 border-[#ffc709] bg-transparent px-6 py-2.5 font-bold text-[#ffc709] no-underline transition-all duration-300 hover:bg-[#ffc709] hover:text-black';
 
-const fetchVehicleBySlug = async (slug?: string): Promise<any | null> => {
+const fetchVehicleBySlug = async (slug?: string): Promise<VehicleData | null> => {
   try {
     const response = await fetch(`${API_URL}/api/vehicles/master/models/slug/${slug}`);
     if (!response.ok) throw new Error('Not found');
     const result = await response.json();
-    if (result.success && result.data) return result.data;
+    if (result.success && result.data) return result.data as VehicleData;
   } catch { /* not found */ }
   return null;
 };
@@ -42,17 +82,17 @@ const fetchVehicleBySlug = async (slug?: string): Promise<any | null> => {
 interface VehicleDisplayData {
   title: string;
   description: string;
-  variants: any[];
+  variants: VehicleVariant[];
   images: string[];
   note?: string;
 }
 
 function VehicleDetailPage({ onLogout }: { onLogout?: () => void }) {
   const { slug } = useParams();
-  const [vehicle, setVehicle] = useState<any>(null);
+  const [vehicle, setVehicle] = useState<VehicleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState<string | null>(null);
-  const [relatedServices, setRelatedServices] = useState<any[]>([]);
+  const [relatedServices, setRelatedServices] = useState<RelatedService[]>([]);
 
   useEffect(() => {
     const loadVehicle = async () => {
@@ -64,7 +104,7 @@ function VehicleDetailPage({ onLogout }: { onLogout?: () => void }) {
       if (data && data.car_model_id) {
         // ⚡ ยิงครั้งเดียว — backend รวมราคาบริการทุกชนิดของรถรุ่นนี้ให้แล้ว (เดิมยิง 18 requests)
         try {
-          const servicesRes = await apiGet<any>(`/api/services/pricing/by-car-model/${encodeURIComponent(String(data.car_model_id))}`);
+          const servicesRes = await apiGet<RelatedService[]>(`/api/services/pricing/by-car-model/${encodeURIComponent(String(data.car_model_id))}`);
           setRelatedServices(Array.isArray(servicesRes) ? servicesRes : []);
         } catch (e) {
           console.error('Error fetching services', e);
@@ -82,12 +122,12 @@ function VehicleDetailPage({ onLogout }: { onLogout?: () => void }) {
 
   if (vehicle) {
     const images = Array.isArray(vehicle.images) && vehicle.images.length > 0
-      ? vehicle.images.map((img: any) => img.url || img.image_url)
+      ? (vehicle.images.map((img) => img.url || img.image_url) as string[])
       : [vehicle.image_url || '/images/no-image.png'];
     const brandName = vehicle.brand?.brand_name || '';
     const modelName = vehicle.model_name || '';
     const title = [brandName, modelName].filter(Boolean).join(' ');
-    brandId = vehicle.brand_id;
+    brandId = vehicle.brand_id ?? null;
 
     displayData = {
       title: title || '-',
@@ -179,9 +219,9 @@ function VehicleDetailPage({ onLogout }: { onLogout?: () => void }) {
 
                 {brandModels && brandModels.length > 1 && (
                   <div className="flex flex-wrap gap-2.5">
-                    {brandModels
-                      .filter((m: any) => m.car_model_id !== vehicle?.car_model_id)
-                      .map((m: any) => (
+                    {(brandModels as unknown as ModelOption[])
+                      .filter((m) => m.car_model_id !== vehicle?.car_model_id)
+                      .map((m) => (
                         <Link key={m.car_model_id} to={`/vehicle/${m.slug}`} className={btnSiblingModelCls}>
                           {m.model_name}
                         </Link>
@@ -213,7 +253,7 @@ function VehicleDetailPage({ onLogout }: { onLogout?: () => void }) {
                             <span className="text-[0.9rem] font-medium text-[#888]">บาท</span>
                           </div>
                           <button className="cursor-pointer rounded-lg border-none bg-white px-5 py-2 font-extrabold text-black transition-all duration-300 enabled:hover:-translate-y-0.5 enabled:hover:bg-[#ffc709] disabled:cursor-not-allowed disabled:bg-[#333] disabled:text-[#666]" disabled={v.stock_quantity === 0}>
-                            {v.stock_quantity > 0 ? 'สนใจจอง' : 'สินค้าหมด'}
+                            {(v.stock_quantity ?? 0) > 0 ? 'สนใจจอง' : 'สินค้าหมด'}
                           </button>
                         </div>
                       </div>

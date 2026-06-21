@@ -1,18 +1,47 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import type { FormFieldEvent } from '@/types';
 import styles from './ManagementPage.module.css'; // ใช้ CSS ร่วมกัน
 import { FaEye, FaTrash, FaCheckCircle, FaEnvelopeOpen, FaSearch } from 'react-icons/fa';
 import { API_URL } from '../../utils/api'; // ใช้ API Config กลาง
 import { HasPermission } from '../../utils/ProtectedRoute';
 
+/** สถานะของข้อความติดต่อ */
+type ContactStatus = 'Pending' | 'Read' | 'Replied';
+
+/** หนึ่งข้อความติดต่อ ตาม field จริงจาก backend/mock */
+interface ContactMessage {
+  contact_id: number;
+  name: string;
+  phone_number?: string;
+  subject?: string;
+  message: string;
+  status: ContactStatus;
+  created_at: string;
+}
+
+/** สถิติข้อความติดต่อ */
+interface ContactStats {
+  total: number;
+  pending: number;
+  read: number;
+  replied: number;
+}
+
+/** state ของ modal รายละเอียดข้อความ */
+interface ContactModalState {
+  open: boolean;
+  message: ContactMessage | null;
+}
+
 export default function ContactManagementPage() {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState<ContactStatus | 'all'>('all');
   const [page, setPage] = useState(1);
-  const [stats, setStats] = useState<any>({ total: 0, pending: 0, read: 0, replied: 0 });
+  const [stats, setStats] = useState<ContactStats>({ total: 0, pending: 0, read: 0, replied: 0 });
   const pageSize = 10;
-  const [modal, setModal] = useState<any>({ open: false, message: null });
+  const [modal, setModal] = useState<ContactModalState>({ open: false, message: null });
 
   useEffect(() => {
     loadMessages();
@@ -28,7 +57,7 @@ export default function ContactManagementPage() {
       if (!response.ok) {
          // throw new Error(`HTTP ${response.status}`);
          console.warn("API Contact not ready, using mock data.");
-         const mockData = [
+         const mockData: ContactMessage[] = [
             { contact_id: 1, name: 'สมชาย ใจดี', phone_number: '0812345678', subject: 'สอบถามราคาล้างแอร์', message: 'รถ Toyota Vios ปี 2012 ล้างแบบไม่ถอดตู้ราคาเท่าไหร่ครับ', status: 'Pending', created_at: '2023-10-25T10:30:00' },
             { contact_id: 2, name: 'Anna Smith', phone_number: '0998887777', subject: 'Appointment Request', message: 'I would like to book a service for oil change.', status: 'Read', created_at: '2023-10-24T14:15:00' },
             { contact_id: 3, name: 'วิชัย', phone_number: '0899999999', subject: 'เปลี่ยนยาง', message: 'มียางขอบ 18 แนะนำไหมครับ', status: 'Replied', created_at: '2023-10-20T09:00:00' },
@@ -38,9 +67,9 @@ export default function ContactManagementPage() {
          return;
       }
 
-      const result = await response.json();
-      if (result.success) {
-        const sortedMessages = [...result.data].sort((a: any, b: any) =>
+      const result = await response.json() as { success?: boolean; data?: ContactMessage[] };
+      if (result.success && result.data) {
+        const sortedMessages = [...result.data].sort((a: ContactMessage, b: ContactMessage) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
         setMessages(sortedMessages);
@@ -56,8 +85,8 @@ export default function ContactManagementPage() {
     try {
       const response = await fetch(`${API_URL}/api/contact/stats`);
       if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
+        const result = await response.json() as { success?: boolean; data?: ContactStats };
+        if (result.success && result.data) {
           setStats(result.data);
         }
       }
@@ -66,9 +95,9 @@ export default function ContactManagementPage() {
     }
   };
 
-  const updateStatus = async (id: any, newStatus: any) => {
+  const updateStatus = async (id: number, newStatus: ContactStatus) => {
     // Mock Update
-    setMessages(prev => prev.map((m: any) => m.contact_id === id ? { ...m, status: newStatus } : m));
+    setMessages(prev => prev.map((m: ContactMessage) => m.contact_id === id ? { ...m, status: newStatus } : m));
 
     /* API Real Implementation
     try {
@@ -87,11 +116,11 @@ export default function ContactManagementPage() {
     */
   };
 
-  const handleDelete = async (id: any) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('ต้องการลบข้อความนี้ใช่หรือไม่?')) return;
 
     // Mock Delete
-    setMessages(prev => prev.filter((m: any) => m.contact_id !== id));
+    setMessages(prev => prev.filter((m: ContactMessage) => m.contact_id !== id));
 
     /* API Real Implementation
     try {
@@ -106,7 +135,7 @@ export default function ContactManagementPage() {
     */
   };
 
-  const openModal = (message: any) => {
+  const openModal = (message: ContactMessage) => {
     setModal({ open: true, message });
     // Mark as read when opened
     if (message.status === 'Pending') {
@@ -123,13 +152,13 @@ export default function ContactManagementPage() {
 
     // Filter by status
     if (filterStatus !== 'all') {
-      result = result.filter((m: any) => m.status === filterStatus);
+      result = result.filter((m: ContactMessage) => m.status === filterStatus);
     }
 
     // Filter by search
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter((m: any) =>
+      result = result.filter((m: ContactMessage) =>
         m.name.toLowerCase().includes(q) ||
         (m.phone_number && m.phone_number.toLowerCase().includes(q)) ||
         (m.subject && m.subject.toLowerCase().includes(q)) ||
@@ -144,7 +173,7 @@ export default function ContactManagementPage() {
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  const getStatusColor = (status: any) => {
+  const getStatusColor = (status: ContactStatus) => {
     switch(status) {
       case 'Pending': return styles.statusPending;
       case 'Read': return styles.statusRead;
@@ -153,7 +182,7 @@ export default function ContactManagementPage() {
     }
   };
 
-  const getStatusText = (status: any) => {
+  const getStatusText = (status: ContactStatus) => {
     switch(status) {
       case 'Pending': return 'รอดำเนินการ';
       case 'Read': return 'อ่านแล้ว';
@@ -162,7 +191,7 @@ export default function ContactManagementPage() {
     }
   };
 
-  const formatDate = (dateString: any) => {
+  const formatDate = (dateString?: string) => {
     if(!dateString) return '-';
     return new Date(dateString).toLocaleString('th-TH', {
       year: 'numeric',
@@ -205,7 +234,7 @@ export default function ContactManagementPage() {
              <input
                 placeholder="ค้นหา ชื่อ, เบอร์, ข้อความ..."
                 value={search}
-                onChange={e => { setSearch(e.target.value); setPage(1); }}
+                onChange={(e: FormFieldEvent) => { setSearch(e.target.value); setPage(1); }}
                 className={styles.searchInput}
                 style={{width: '100%', paddingLeft: 35}}
             />
@@ -214,7 +243,7 @@ export default function ContactManagementPage() {
 
         <select
           value={filterStatus}
-          onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
+          onChange={(e: FormFieldEvent) => { setFilterStatus(e.target.value as ContactStatus | 'all'); setPage(1); }}
           className={styles.select}
           style={{width: 'auto'}}
         >
@@ -245,7 +274,7 @@ export default function ContactManagementPage() {
               {visible.length === 0 && (
                 <tr><td colSpan={7} style={{ textAlign: 'center' }}>ไม่พบข้อความ</td></tr>
               )}
-              {visible.map((msg: any) => (
+              {visible.map((msg: ContactMessage) => (
                 <tr key={msg.contact_id} style={{ backgroundColor: msg.status === 'Pending' ? '#fffbf2' : 'transparent' }}>
                   <td style={{ fontSize: '0.85rem', whiteSpace:'nowrap' }}>{formatDate(msg.created_at)}</td>
                   <td style={{fontWeight:500}}>{msg.name}</td>
@@ -371,7 +400,7 @@ export default function ContactManagementPage() {
               {modal.message.status !== 'Replied' && (
                   <button
                     onClick={() => {
-                      updateStatus(modal.message.contact_id, 'Replied');
+                      if (modal.message) updateStatus(modal.message.contact_id, 'Replied');
                       closeModal();
                     }}
                     className={styles.btnPrimary}

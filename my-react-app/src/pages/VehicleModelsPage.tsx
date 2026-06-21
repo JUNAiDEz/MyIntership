@@ -6,23 +6,72 @@ import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 import styles from './VehicleModelsPage.module.css';
 import { apiGet, API_URL } from '@/utils/api';
+import type { Product } from '@/types';
 
 const seo = {
   title: 'รุ่นรถยนต์ | GT7 Motor ศูนย์รวมข้อมูลรุ่นรถและบริการสำหรับรถยนต์ทุกประเภท',
   description: 'สำรวจข้อมูลรุ่นรถยนต์ยอดนิยมในไทย ทั้ง SUV, Sedan, Truck, Coupe, Van, Hatchback พร้อมบริการและโปรโมชั่นสำหรับรถแต่ละรุ่นจาก GT7 Motor',
 };
 
+// ---- local types (master vehicle endpoints + bundled service/product responses) ----
+interface BrandOption {
+  brand_id: number | string;
+  brand_name: string;
+  [key: string]: unknown;
+}
+
+interface ModelOption {
+  car_model_id: number | string;
+  model_name?: string;
+  brand_id?: number | string;
+  slug?: string;
+  model_year?: number | string | Array<number | string>;
+  brand?: { brand_name?: string };
+  [key: string]: unknown;
+}
+
+interface ServiceCard {
+  id?: number | string;
+  stage?: string;
+  name?: string;
+  price?: number;
+  service_img?: string;
+  car_model_id?: number | string;
+  [key: string]: unknown;
+}
+
+interface ProductCarModelItem {
+  product_template_id: number | string;
+  car_model_id: number | string;
+  price?: number | string;
+  note?: string;
+  product_template?: {
+    slug?: string;
+    product_template_id?: number | string;
+    product_name?: string;
+    images?: Array<{ image_url?: string }>;
+  };
+  [key: string]: unknown;
+}
+
+/** envelope { success, data } จาก backend */
+interface SuccessEnvelope<T> {
+  success?: boolean;
+  data?: T;
+  [key: string]: unknown;
+}
+
 function VehicleModelsPage(_props: { onLogout?: () => void }) {
-  const [models, setModels] = useState<any[]>([]);
-  const [brands, setBrands] = useState<any[]>([]);
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [brands, setBrands] = useState<BrandOption[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<string | number>('all');
   const [selectedModel, setSelectedModel] = useState<number | string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [services, setServices] = useState<ServiceCard[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [productCarModels, setProductCarModels] = useState<any[]>([]);
+  const [productCarModels, setProductCarModels] = useState<ProductCarModelItem[]>([]);
   const [loadingProductCarModels, setLoadingProductCarModels] = useState(false);
 
   const [showFilters, setShowFilters] = useState(true);
@@ -60,8 +109,8 @@ function VehicleModelsPage(_props: { onLogout?: () => void }) {
       setError(null);
       try {
         const [brandRes, modelRes] = await Promise.all([
-          apiGet<any>('/api/vehicles/master/brands'),
-          apiGet<any>('/api/vehicles/master/models'),
+          apiGet<SuccessEnvelope<BrandOption[]>>('/api/vehicles/master/brands'),
+          apiGet<SuccessEnvelope<ModelOption[]>>('/api/vehicles/master/models'),
         ]);
         if (brandRes && brandRes.success && Array.isArray(brandRes.data)) {
           setBrands([{ brand_id: 'all', brand_name: 'All' }, ...brandRes.data]);
@@ -114,17 +163,17 @@ function VehicleModelsPage(_props: { onLogout?: () => void }) {
       setServices([]);
       setProductCarModels([]);
       try {
-        const pcmRes = await apiGet<any>(`/api/products/product-car-model/by-car-model/${selectedModel}`);
+        const pcmRes = await apiGet<SuccessEnvelope<ProductCarModelItem[]>>(`/api/products/product-car-model/by-car-model/${selectedModel}`);
         if (pcmRes && pcmRes.success && Array.isArray(pcmRes.data)) {
           setProductCarModels(pcmRes.data);
         } else {
           setProductCarModels([]);
         }
 
-        const prodRes = await apiGet<any>(`/api/inventory/products?active=true&car_model_id=${encodeURIComponent(String(selectedModel))}`);
+        const prodRes = await apiGet<Product[] | { items?: Product[] }>(`/api/inventory/products?active=true&car_model_id=${encodeURIComponent(String(selectedModel))}`);
 
         // ⚡ ยิงครั้งเดียว — backend รวมราคาบริการทุกชนิดของรถรุ่นนี้ให้แล้ว (เดิมยิง 18 requests)
-        const servicesRes = await apiGet<any>(`/api/services/pricing/by-car-model/${encodeURIComponent(String(selectedModel))}`);
+        const servicesRes = await apiGet<ServiceCard[]>(`/api/services/pricing/by-car-model/${encodeURIComponent(String(selectedModel))}`);
 
         if (!mounted) return;
         setProducts(Array.isArray(prodRes) ? prodRes : (prodRes?.items || []));

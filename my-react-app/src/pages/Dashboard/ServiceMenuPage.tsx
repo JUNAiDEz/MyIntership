@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaListUl, FaCarSide, FaTools, FaRocket, FaStickyNote, FaChevronRight
@@ -12,9 +12,20 @@ const iconColorClasses: Record<string, string> = {
   purple: 'bg-[#faf5ff] text-[#9333ea]',
 };
 
+interface MenuItem {
+  id: string;
+  title: string;
+  desc: string;
+  path: string;
+  icon: ReactNode;
+  color: keyof typeof iconColorClasses;
+  isFullWidth?: boolean;
+  count?: number;
+}
+
 const ServiceMenuPage = () => {
   // รวมข้อมูลไว้ใน Array เพื่อให้จัดการง่าย และรองรับการดึง API ในอนาคต
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       id: 'manage',
       title: 'จัดการข้อมูลบริการ',
@@ -71,7 +82,7 @@ const ServiceMenuPage = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-5 max-md:grid-cols-1">
-        {menuItems.map((item: any) => (
+        {menuItems.map((item: MenuItem) => (
           <Link
             key={item.id}
             to={item.path}

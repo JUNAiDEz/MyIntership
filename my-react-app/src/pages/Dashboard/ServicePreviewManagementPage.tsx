@@ -4,9 +4,25 @@ import PageBuilder from '../../components/DynamicRenderer/PageBuilder';
 import Footer from '../../components/Layout/Footer';
 
 import React, { useState, useEffect } from 'react';
+import type { FormFieldEvent } from '@/types';
 
+/** หนึ่ง section ใน layout (ตรงกับ Block ของ PageBuilder) */
+interface PageSection {
+  type: string;
+  props: Record<string, unknown>;
+}
 
-const DEFAULT_CONFIG = {
+/** โครงสร้าง config ของหน้า preview ที่เก็บใน state/localStorage */
+interface PageConfig {
+  title?: string;
+  description?: string;
+  heroImage?: string;
+  layout: PageSection[];
+  pricingData?: unknown[];
+  relatedLinks?: Array<Record<string, unknown>>;
+}
+
+const DEFAULT_CONFIG: PageConfig = {
   title: "ชื่อบริการใหม่",
   description: "คำอธิบายบริการสำหรับ SEO",
   heroImage: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1600",
@@ -26,9 +42,9 @@ const DEFAULT_CONFIG = {
 const API_BASE_URL = 'https://apigame.gt7dev.com/api/service-preview';
 
 const ServicePreviewManagementPage = () => {
-  const [adminConfig, setAdminConfig] = useState<any>(DEFAULT_CONFIG);
+  const [adminConfig, setAdminConfig] = useState<PageConfig>(DEFAULT_CONFIG);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Sync adminConfig to localStorage for real-time preview
   useEffect(() => {
@@ -48,7 +64,7 @@ const ServicePreviewManagementPage = () => {
         // ถ้าขึ้น Unexpected token '<' แสดงว่า URL ผิด หรือ Server ส่งหน้า HTML กลับมา
         if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลจาก Server ได้');
 
-        const data = await res.json();
+        const data = (await res.json()) as { page_config?: PageConfig };
         // ตรวจสอบโครงสร้างข้อมูลที่มาจาก Controller (page_config)
         setAdminConfig(data.page_config || DEFAULT_CONFIG);
       } catch (err) {
@@ -61,8 +77,8 @@ const ServicePreviewManagementPage = () => {
     fetchData();
   }, []);
 
-  const addSection = (type: any) => {
-    let newProps: any = {};
+  const addSection = (type: string) => {
+    let newProps: Record<string, unknown> = {};
     if (type === 'HERO') newProps = { title: 'หัวข้อใหม่', subtitle: 'รายละเอียด...', bgImage: '' };
     if (type === 'REVIEWS') newProps = { reviewItems: [] };
     if (type === 'MAP') newProps = { address: 'Bangkok', height: '400px' };
@@ -73,14 +89,14 @@ const ServicePreviewManagementPage = () => {
     });
   };
 
-  const updateSectionProps = (index: any, newProps: any) => {
+  const updateSectionProps = (index: number, newProps: Record<string, unknown>) => {
     const newLayout = [...adminConfig.layout];
     newLayout[index].props = { ...newLayout[index].props, ...newProps };
     setAdminConfig({ ...adminConfig, layout: newLayout });
   };
 
-  const removeSection = (index: any) => {
-    const newLayout = adminConfig.layout.filter((_: any, i: number) => i !== index);
+  const removeSection = (index: number) => {
+    const newLayout = adminConfig.layout.filter((_: PageSection, i: number) => i !== index);
     setAdminConfig({ ...adminConfig, layout: newLayout });
   };
 
@@ -102,7 +118,7 @@ const ServicePreviewManagementPage = () => {
         }),
       });
 
-      const result = await res.json();
+      const result = (await res.json()) as { message?: string };
 
       if (!res.ok) {
         throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
@@ -130,14 +146,14 @@ const ServicePreviewManagementPage = () => {
             type="text"
             style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
             value={adminConfig.title || ''}
-            onChange={(e: any) => setAdminConfig({ ...adminConfig, title: e.target.value })}
+            onChange={(e: FormFieldEvent) => setAdminConfig({ ...adminConfig, title: e.target.value })}
           />
         </div>
 
         <hr />
         <h4 style={{ marginTop: '20px' }}>Sections Management</h4>
 
-        {adminConfig.layout && adminConfig.layout.map((section: any, index: number) => (
+        {adminConfig.layout && adminConfig.layout.map((section: PageSection, index: number) => (
           <div key={index} style={{ background: '#333', color: '#fff', padding: '15px', borderRadius: '8px', marginBottom: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <strong>{section.type} #{index + 1}</strong>
@@ -150,15 +166,15 @@ const ServicePreviewManagementPage = () => {
                   type="text"
                   placeholder="Title"
                   style={{ width: '100%', marginBottom: '5px', padding: '5px' }}
-                  value={section.props.title}
-                  onChange={(e: any) => updateSectionProps(index, { title: e.target.value })}
+                  value={(section.props.title as string) ?? ''}
+                  onChange={(e: FormFieldEvent) => updateSectionProps(index, { title: e.target.value })}
                 />
                 <input
                   type="text"
                   placeholder="Subtitle"
                   style={{ width: '100%', padding: '5px' }}
-                  value={section.props.subtitle}
-                  onChange={(e: any) => updateSectionProps(index, { subtitle: e.target.value })}
+                  value={(section.props.subtitle as string) ?? ''}
+                  onChange={(e: FormFieldEvent) => updateSectionProps(index, { subtitle: e.target.value })}
                 />
               </div>
             )}

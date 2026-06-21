@@ -10,7 +10,7 @@ import { FaTools, FaCarBattery, FaCogs, FaOilCan, FaCompactDisc, FaCar } from 'r
 import { apiGet } from '@/utils/api';
 import { Link } from 'react-router-dom';
 
-interface PromoLineItem {
+export interface PromoLineItem {
   type?: string;
   name?: string;
   imageUrl?: string;
@@ -18,7 +18,7 @@ interface PromoLineItem {
   service_id?: number | string;
 }
 
-interface PromotionItem {
+export interface PromotionItem {
   id?: string | number;
   promotion_id?: string | number;
   slug?: string;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import {
@@ -55,7 +55,7 @@ import StickerManagementPage from './WrapCarManagement/StickerManagementPage';
 import FAQManagementPage from './FAQManagementPage';
 
 // Placeholder สำหรับหน้าอื่นๆ
-const PlaceholderPage = ({ title, icon }: { title?: any; icon?: any }) => (
+const PlaceholderPage = ({ title, icon }: { title?: ReactNode; icon?: ReactNode }) => (
   <div className={styles.placeholderContent}>
     <div className={styles.placeholderIcon}>{icon}</div>
     <h2>{title}</h2>
@@ -64,9 +64,17 @@ const PlaceholderPage = ({ title, icon }: { title?: any; icon?: any }) => (
 );
 
 // Card Template (ดีไซน์ใหม่)
-function ServiceCard({ title, desc, icon, link, colorClass }: { title?: any; desc?: any; icon?: any; link?: any; colorClass?: any }) {
+interface ServiceCardProps {
+  title?: ReactNode;
+  desc?: ReactNode;
+  icon?: ReactNode;
+  link?: string;
+  colorClass?: string;
+}
+
+function ServiceCard({ title, desc, icon, link, colorClass }: ServiceCardProps) {
   return (
-    <Link to={link} className={`${styles.serviceCard} ${styles[colorClass]}`}>
+    <Link to={link ?? ''} className={`${styles.serviceCard} ${colorClass ? styles[colorClass] : ''}`}>
       <div className={styles.serviceIconWrapper}>
         {icon}
       </div>
@@ -80,13 +88,21 @@ function ServiceCard({ title, desc, icon, link, colorClass }: { title?: any; des
 }
 
 // Alias for reusing the card design
-const FitmentCard = (props: any) => <ServiceCard {...props} colorClass="cardOrange" />;
-const MaintenanceCard = (props: any) => <ServiceCard {...props} colorClass="cardGreen" />;
-const UpgradeCard = (props: any) => <ServiceCard {...props} colorClass="cardRed" />;
-const WrapCarCard = (props: any) => <ServiceCard {...props} colorClass="cardPurple" />;
+type CardAliasProps = Omit<ServiceCardProps, 'colorClass'>;
+const FitmentCard = (props: CardAliasProps) => <ServiceCard {...props} colorClass="cardOrange" />;
+const MaintenanceCard = (props: CardAliasProps) => <ServiceCard {...props} colorClass="cardGreen" />;
+const UpgradeCard = (props: CardAliasProps) => <ServiceCard {...props} colorClass="cardRed" />;
+const WrapCarCard = (props: CardAliasProps) => <ServiceCard {...props} colorClass="cardPurple" />;
 
 // Widget Card Component for Home
-const HomeWidget = ({ title, count, icon, color, subtext }: { title?: any; count?: any; icon?: any; color?: any; subtext?: any }) => (
+interface HomeWidgetProps {
+  title?: ReactNode;
+  count?: ReactNode;
+  icon?: ReactNode;
+  color?: string;
+  subtext?: ReactNode;
+}
+const HomeWidget = ({ title, count, icon, color, subtext }: HomeWidgetProps) => (
   <div className={styles.statCard} style={{ borderTopColor: color }}>
     <div className={styles.statContent}>
       <div>
@@ -102,8 +118,14 @@ const HomeWidget = ({ title, count, icon, color, subtext }: { title?: any; count
 );
 
 // Quick Action Card
-const QuickLink = ({ to, title, icon, color }: { to?: any; title?: any; icon?: any; color?: any }) => (
-  <Link to={to} className={styles.quickLink}>
+interface QuickLinkProps {
+  to?: string;
+  title?: ReactNode;
+  icon?: ReactNode;
+  color?: string;
+}
+const QuickLink = ({ to, title, icon, color }: QuickLinkProps) => (
+  <Link to={to ?? ''} className={styles.quickLink}>
     <div className={styles.quickLinkIcon} style={{ background: `linear-gradient(135deg, ${color}, ${color}dd)` }}>
       {icon}
     </div>

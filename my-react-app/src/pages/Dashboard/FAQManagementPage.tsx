@@ -1,13 +1,35 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ChangeEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { FormFieldEvent, ModalState } from '@/types';
 import styles from './ManagementPage.module.css';
 import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 
 // API endpoint
 const API_URL = import.meta.env.VITE_API_URL;
 
+/** หนึ่งรายการ FAQ ตาม field จริงจาก backend */
+interface Faq {
+  id: number;
+  question: string;
+  answer: string;
+  category?: string;
+  sort_order?: number;
+  is_active?: boolean;
+  slug?: string;
+}
+
+/** state ฟอร์ม FAQ (sort_order เป็น string|number เพราะ input number bind ค่า string) */
+interface FaqForm {
+  question: string;
+  answer: string;
+  category: string;
+  sort_order: number | string;
+  is_active: boolean;
+  slug: string;
+}
+
 // Helper: Fetch all FAQs from API
-const fetchFaqs = async () => {
+const fetchFaqs = async (): Promise<Faq[]> => {
   try {
     const response = await fetch(`${API_URL}/api/faq?limit=1000`, {
       signal: AbortSignal.timeout(5000) // 5 second timeout
@@ -17,9 +39,9 @@ const fetchFaqs = async () => {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as { success?: boolean; data?: Faq[] };
     if (result.success) {
-      return result.data;
+      return result.data ?? [];
     }
 
     return [];
@@ -35,16 +57,16 @@ export default function FAQManagementPage(){
     queryKey: ['faqs'],
     queryFn: async () => {
       const faqs = await fetchFaqs();
-      return [...faqs].sort((a: any, b: any) => a.id - b.id);
+      return [...faqs].sort((a: Faq, b: Faq) => a.id - b.id);
     },
   });
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 12;
-  const [modal, setModal] = useState<any>({ open: false, mode: 'view', item: null });
+  const [modal, setModal] = useState<ModalState<Faq>>({ open: false, mode: 'view', item: null });
 
   // Form state
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<FaqForm>({
     question: '',
     answer: '',
     category: '',
@@ -61,30 +83,30 @@ export default function FAQManagementPage(){
       const { question, answer, category, sort_order, is_active, slug } = formData;
       const body = JSON.stringify({
         question: question.trim(), answer: answer.trim(), category: category.trim(),
-        sort_order: parseInt(sort_order) || 0, is_active, slug: slug.trim() || undefined,
+        sort_order: parseInt(String(sort_order)) || 0, is_active, slug: slug.trim() || undefined,
       });
       const isEdit = modal.mode === 'edit';
-      const url = isEdit ? `${API_URL}/api/faq/${modal.item.id}` : `${API_URL}/api/faq`;
+      const url = isEdit ? `${API_URL}/api/faq/${modal.item?.id}` : `${API_URL}/api/faq`;
       const res = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body });
       if (!res.ok) throw new Error('Failed to save FAQ');
       return res.json();
     },
     onSuccess: () => { refresh(); closeModal(); },
-    onError: (e: any) => alert('เกิดข้อผิดพลาด: ' + (e?.message || e)),
+    onError: (e: unknown) => alert('เกิดข้อผิดพลาด: ' + (e instanceof Error ? e.message : String(e))),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => {
+    mutationFn: async (id: number) => {
       const res = await fetch(`${API_URL}/api/faq/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete FAQ');
       return res.json();
     },
     onSuccess: refresh,
-    onError: (e: any) => alert('เกิดข้อผิดพลาดในการลบ: ' + (e?.message || e)),
+    onError: (e: unknown) => alert('เกิดข้อผิดพลาดในการลบ: ' + (e instanceof Error ? e.message : String(e))),
   });
 
   const toggleMutation = useMutation({
-    mutationFn: async (id: any) => {
+    mutationFn: async (id: number) => {
       const res = await fetch(`${API_URL}/api/faq/${id}/toggle-active`, { method: 'PATCH' });
       if (!res.ok) throw new Error('Failed to toggle status');
       return res.json();
@@ -96,14 +118,14 @@ export default function FAQManagementPage(){
   const filtered = useMemo(() => {
     if (!search) return items;
     const q = search.toLowerCase();
-    return items.filter((i: any) => `${i.question} ${i.category}`.toLowerCase().includes(q));
+    return items.filter((i: Faq) => `${i.question} ${i.category}`.toLowerCase().includes(q));
   }, [items, search]);
 
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  const openModal = (mode: any, item: any = null) => {
+  const openModal = (mode: ModalState['mode'], item: Faq | null = null) => {
     if (mode === 'create') {
       setFormData({
         question: '',
@@ -155,12 +177,12 @@ export default function FAQManagementPage(){
     saveMutation.mutate();
   };
 
-  const handleDelete = (id: any) => {
+  const handleDelete = (id: number) => {
     if (!confirm('ต้องการลบคำถามนี้ใช่หรือไม่?')) return;
     deleteMutation.mutate(id);
   };
 
-  const toggleStatus = (id: any, _currentStatus?: any) => {
+  const toggleStatus = (id: number, _currentStatus?: boolean) => {
     toggleMutation.mutate(id);
   };
 
@@ -169,7 +191,7 @@ export default function FAQManagementPage(){
       <div className={styles.productHeader}>
         <h2 className={styles.contentTitle}>จัดการคำถามที่พบบ่อย (FAQ)</h2>
         <div style={{ display: 'flex', gap: 8 }}>
-          <input placeholder="ค้นหา FAQ..." value={search} onChange={(e: any) => { setSearch(e.target.value); setPage(1); }} style={{ padding: '6px 8px' }} />
+          <input placeholder="ค้นหา FAQ..." value={search} onChange={(e: FormFieldEvent) => { setSearch(e.target.value); setPage(1); }} style={{ padding: '6px 8px' }} />
           <button onClick={() => openModal('create')} className={styles.addButton}><FaPlus /> เพิ่ม FAQ</button>
         </div>
       </div>
@@ -191,7 +213,7 @@ export default function FAQManagementPage(){
             </thead>
             <tbody>
               {visible.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center' }}>ไม่พบคำถาม</td></tr>}
-              {visible.map((i: any) => (
+              {visible.map((i: Faq) => (
                 <tr key={i.id}>
                   <td>{i.id}</td>
                   <td>{i.question}</td>
@@ -237,7 +259,7 @@ export default function FAQManagementPage(){
                 <input
                   type="text"
                   value={formData.question}
-                  onChange={(e: any) => setFormData({...formData, question: e.target.value})}
+                  onChange={(e: FormFieldEvent) => setFormData({...formData, question: e.target.value})}
                   disabled={modal.mode === 'view'}
                   style={{ width: '100%', padding: '8px', marginTop: '4px' }}
                 />
@@ -247,7 +269,7 @@ export default function FAQManagementPage(){
                 <label>คำตอบ *</label>
                 <textarea
                   value={formData.answer}
-                  onChange={(e: any) => setFormData({...formData, answer: e.target.value})}
+                  onChange={(e: FormFieldEvent) => setFormData({...formData, answer: e.target.value})}
                   disabled={modal.mode === 'view'}
                   style={{ width: '100%', padding: '8px', marginTop: '4px', minHeight: '100px' }}
                 />
@@ -258,7 +280,7 @@ export default function FAQManagementPage(){
                 <input
                   type="text"
                   value={formData.category}
-                  onChange={(e: any) => setFormData({...formData, category: e.target.value})}
+                  onChange={(e: FormFieldEvent) => setFormData({...formData, category: e.target.value})}
                   disabled={modal.mode === 'view'}
                   placeholder="เช่น บริการ, การชำระเงิน, ทั่วไป"
                   style={{ width: '100%', padding: '8px', marginTop: '4px' }}
@@ -270,7 +292,7 @@ export default function FAQManagementPage(){
                 <input
                   type="number"
                   value={formData.sort_order}
-                  onChange={(e: any) => setFormData({...formData, sort_order: e.target.value})}
+                  onChange={(e: FormFieldEvent) => setFormData({...formData, sort_order: e.target.value})}
                   disabled={modal.mode === 'view'}
                   style={{ width: '100%', padding: '8px', marginTop: '4px' }}
                 />
@@ -281,7 +303,7 @@ export default function FAQManagementPage(){
                 <input
                   type="text"
                   value={formData.slug}
-                  onChange={(e: any) => setFormData({...formData, slug: e.target.value})}
+                  onChange={(e: FormFieldEvent) => setFormData({...formData, slug: e.target.value})}
                   disabled={modal.mode === 'view'}
                   placeholder="เช่น frequently-asked-question"
                   style={{ width: '100%', padding: '8px', marginTop: '4px' }}
@@ -293,7 +315,7 @@ export default function FAQManagementPage(){
                   type="checkbox"
                   id="is_active"
                   checked={formData.is_active}
-                  onChange={(e: any) => setFormData({...formData, is_active: e.target.checked})}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, is_active: e.target.checked})}
                   disabled={modal.mode === 'view'}
                 />
                 <label htmlFor="is_active" style={{ margin: 0 }}>แสดงในหน้าเว็บ</label>

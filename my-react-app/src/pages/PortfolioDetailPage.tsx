@@ -8,6 +8,60 @@ interface PortfolioDetailPageProps {
   onLogout?: () => void;
 }
 
+/** category ดิบจาก backend (key ไม่ตายตัว) */
+interface RawCategory {
+  portfolio_category_id?: number | string;
+  id?: number | string;
+  category_name?: string;
+  title?: string;
+}
+
+/** รูปใน gallery อาจเป็น string ตรงๆ หรือ object { image_url } */
+type RawGalleryItem = string | { image_url?: string };
+
+/** project ดิบจาก /api/portfolio/projects */
+interface RawProject {
+  project_id?: number | string;
+  id?: number | string;
+  slug?: string;
+  title?: string;
+  completion_date?: string;
+  year?: number | string;
+  car_model?: { model_name?: string };
+  model?: string;
+  cover_image_url?: string;
+  image?: string;
+  description?: string;
+  summary?: string;
+  categories?: RawCategory[];
+  services?: RawCategory[];
+  gallery?: RawGalleryItem[];
+}
+
+interface PortfolioResponse {
+  success?: boolean;
+  data?: RawProject[];
+}
+
+/** หมวดบริการที่ map แล้ว (ใช้แสดงในหน้า) */
+interface ProjectService {
+  id?: number | string;
+  title?: string;
+}
+
+/** ผลงานที่ map แล้วสำหรับแสดงรายละเอียด */
+interface CarDetail {
+  id?: number | string;
+  slug?: string;
+  title?: string;
+  year?: number | string;
+  model?: string;
+  image?: string;
+  summary?: string;
+  services: ProjectService[];
+  gallery: string[];
+}
+
 const btnPrimaryCls =
   'flex cursor-pointer items-center justify-center rounded-[30px] border-2 border-accent bg-transparent px-[30px] py-3 text-base font-bold text-accent transition-all duration-300 hover:-translate-y-[3px] hover:bg-accent hover:text-black hover:shadow-[0_8px_20px_rgba(255,199,9,0.3)]';
 const wrapperCls = 'min-h-screen bg-[#050505] pb-[50px] text-white';
@@ -16,15 +70,15 @@ const mainCls = 'relative mx-auto max-w-[1000px] p-[40px_20px]';
 export default function PortfolioDetailPage({ onLogout }: PortfolioDetailPageProps) {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const [car, setCar] = useState<any>(null);
+  const [car, setCar] = useState<CarDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [otherProjects, setOtherProjects] = useState<any[]>([]);
+  const [otherProjects, setOtherProjects] = useState<RawProject[]>([]);
 
   useEffect(() => {
     setLoading(true);
     window.scrollTo(0, 0);
 
-    apiGet<any>(`/api/portfolio/projects?slug=${slug}`)
+    apiGet<PortfolioResponse>(`/api/portfolio/projects?slug=${slug}`)
       .then((res) => {
         if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
           const p = res.data[0];
@@ -36,8 +90,8 @@ export default function PortfolioDetailPage({ onLogout }: PortfolioDetailPagePro
             model: p.car_model?.model_name || p.model,
             image: p.cover_image_url || p.image,
             summary: p.description || p.summary,
-            services: (p.categories || p.services || []).map((c: any) => ({ id: c.portfolio_category_id || c.id, title: c.category_name || c.title })),
-            gallery: (p.gallery || []).map((g: any) => g.image_url || g),
+            services: (p.categories || p.services || []).map((c: RawCategory) => ({ id: c.portfolio_category_id || c.id, title: c.category_name || c.title })),
+            gallery: (p.gallery || []).map((g: RawGalleryItem) => (typeof g === 'string' ? g : g.image_url || '')),
           });
         } else {
           setCar(null);
@@ -49,10 +103,10 @@ export default function PortfolioDetailPage({ onLogout }: PortfolioDetailPagePro
         setLoading(false);
       });
 
-    apiGet<any>('/api/portfolio/projects?limit=4')
+    apiGet<PortfolioResponse>('/api/portfolio/projects?limit=4')
       .then((res) => {
         if (res && res.success && Array.isArray(res.data)) {
-          setOtherProjects(res.data.filter((p: any) => p.slug !== slug).slice(0, 3));
+          setOtherProjects(res.data.filter((p: RawProject) => p.slug !== slug).slice(0, 3));
         } else {
           setOtherProjects([]);
         }
@@ -116,7 +170,7 @@ export default function PortfolioDetailPage({ onLogout }: PortfolioDetailPagePro
             <div className="mb-[50px]">
               <h4 className="mb-[15px] text-[1.1rem] font-extrabold uppercase tracking-[1px] text-accent">SERVICES PERFORMED</h4>
               <ul className="m-0 flex list-none flex-wrap gap-3 p-0">
-                {car.services.map((s: any) => (
+                {car.services.map((s: ProjectService) => (
                   <li key={s.id} className="rounded-lg border border-[#444] bg-white/5 px-[18px] py-2 text-[0.95rem] font-medium text-[#eee] transition-all duration-300 hover:-translate-y-0.5 hover:border-accent hover:bg-accent/10 hover:text-accent">{s.title}</li>
                 ))}
               </ul>

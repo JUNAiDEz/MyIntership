@@ -9,13 +9,27 @@ import PageBuilder from '../../components/DynamicRenderer/PageBuilder';
 
 // 1. เพิ่ม Default Parameter { adminData = {} } เพื่อป้องกันค่า undefined
 
+/** หนึ่ง section ใน layout (ตรงกับ Block ของ PageBuilder) */
+interface PageSection {
+  type: string;
+  props?: Record<string, unknown>;
+}
 
-function ServicePreview(_props: { adminData?: any }) {
-  const [adminData, setAdminData] = useState<any>(null);
+/** โครงสร้าง config ที่อ่านจาก localStorage (servicePreviewConfig) */
+interface AdminData {
+  layout?: PageSection[];
+  [key: string]: unknown;
+}
+
+/** data ที่ส่งให้ ServiceModal (ตรงกับ prop ของ component) */
+type ServiceModalData = React.ComponentProps<typeof ServiceModal>['data'];
+
+function ServicePreview(_props: { adminData?: AdminData }) {
+  const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModalData>(null);
 
   // ดึงข้อมูลล่าสุดจาก localStorage (ที่ ServicePreviewManagementPage แก้ไข)
   useEffect(() => {

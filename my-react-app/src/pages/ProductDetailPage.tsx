@@ -33,6 +33,56 @@ interface MockReview {
   comment: string;
 }
 
+// ---- local types สำหรับ response ของหน้านี้ ----
+interface ProductVariant {
+  variant_name?: string;
+  sku?: string;
+  unit_price?: number | string;
+  stock_quantity?: number;
+  [key: string]: unknown;
+}
+
+interface ProductImageLike {
+  image_url?: string;
+  url?: string;
+  is_primary?: boolean;
+}
+
+interface ProductDetail {
+  id?: number | string;
+  product_template_id?: number | string;
+  slug?: string;
+  title?: string;
+  product_name?: string;
+  description?: string;
+  price?: number | string;
+  img?: string;
+  image_url?: string;
+  images?: ProductImageLike[];
+  variants?: ProductVariant[];
+  note?: string | null;
+  product_template?: ProductDetail;
+  _source?: 'products' | 'productCarModel';
+  [key: string]: unknown;
+}
+
+interface PromotionLine {
+  product_variant_id?: number | string;
+  service_id?: number | string;
+  discounted_price?: number | string;
+}
+
+interface PromotionItem {
+  promotion_id?: number | string;
+  promotion_name?: string;
+  description?: string;
+  discount_value?: number | string;
+  promotion_type?: string;
+  products?: PromotionLine[];
+  services?: PromotionLine[];
+  [key: string]: unknown;
+}
+
 const MOCK_REVIEWS: MockReview[] = [
   { id: 1, user: 'Pichai S.', rating: 5, date: '2 วันที่แล้ว', comment: 'สินค้าคุณภาพดีมากครับ จัดส่งไว แพ็คของมาแน่นหนา' },
   { id: 2, user: 'Somsak K.', rating: 4, date: '1 สัปดาห์ที่แล้ว', comment: 'ใช้งานได้ดีครับ คุ้มราคา แนะนำเลย' },
@@ -43,12 +93,12 @@ interface DisplayData {
   title: string;
   description?: string;
   price?: number | string;
-  variants: any[];
+  variants: ProductVariant[];
   images: string[];
   note?: string | null;
 }
 
-const fetchPromotionsByProduct = async (productId: number | string): Promise<any[]> => {
+const fetchPromotionsByProduct = async (productId: number | string): Promise<PromotionItem[]> => {
   try {
     const res = await fetch(`${API_URL}/api/promotions/by-product/${productId}`);
     if (!res.ok) return [];
@@ -59,7 +109,7 @@ const fetchPromotionsByProduct = async (productId: number | string): Promise<any
   }
 };
 
-const fetchProductBySlug = async (slug?: string): Promise<any | null> => {
+const fetchProductBySlug = async (slug?: string): Promise<ProductDetail | null> => {
   try {
     const response = await fetch(`${API_URL}/api/inventory/products/slug/${slug}`);
     if (!response.ok) throw new Error('Not found');
@@ -79,12 +129,12 @@ const fetchProductBySlug = async (slug?: string): Promise<any | null> => {
 
 function ProductDetailPage({ onLogout }: { onLogout?: () => void }) {
   const { slug } = useParams();
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState<string | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<ProductDetail[]>([]);
   const [showReviews, setShowReviews] = useState(false);
-  const [promotions, setPromotions] = useState<any[]>([]);
+  const [promotions, setPromotions] = useState<PromotionItem[]>([]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -95,7 +145,7 @@ function ProductDetailPage({ onLogout }: { onLogout?: () => void }) {
       window.scrollTo(0, 0);
       setShowReviews(false);
       if (data && (data.product_template_id || data.id)) {
-        const promos = await fetchPromotionsByProduct(data.product_template_id || data.id);
+        const promos = await fetchPromotionsByProduct(data.product_template_id || data.id || '');
         setPromotions(promos);
       } else {
         setPromotions([]);
@@ -110,8 +160,8 @@ function ProductDetailPage({ onLogout }: { onLogout?: () => void }) {
         const res = await fetch(`${API_URL}/api/inventory/products?limit=10`);
         if (res.ok) {
           const data = await res.json();
-          const items = Array.isArray(data) ? data : (data.items || []);
-          const filtered = items.filter((item: any) => item.slug !== slug).slice(0, 4);
+          const items: ProductDetail[] = Array.isArray(data) ? data : (data.items || []);
+          const filtered = items.filter((item) => item.slug !== slug).slice(0, 4);
           setRelatedProducts(filtered);
         }
       } catch (err) {
@@ -125,11 +175,11 @@ function ProductDetailPage({ onLogout }: { onLogout?: () => void }) {
   if (product) {
     if (product._source === 'products') {
       const rawImages = Array.isArray(product.images) && product.images.length > 0
-        ? product.images.map((img: any) => getImageUrl(img.image_url || img.url))
+        ? product.images.map((img) => getImageUrl(img.image_url || img.url))
         : [getImageUrl(product.image_url || product.img)];
 
       displayData = {
-        title: product.title || product.product_name,
+        title: product.title || product.product_name || '',
         description: product.description,
         price: product.price,
         variants: product.variants || [],
@@ -137,9 +187,9 @@ function ProductDetailPage({ onLogout }: { onLogout?: () => void }) {
         note: null,
       };
     } else if (product._source === 'productCarModel') {
-      const pt = product.product_template || {};
+      const pt: ProductDetail = product.product_template || {};
       const rawImages = Array.isArray(pt.images) && pt.images.length > 0
-        ? pt.images.map((img: any) => getImageUrl(img.image_url || img.url))
+        ? pt.images.map((img) => getImageUrl(img.image_url || img.url))
         : [getImageUrl(pt.image_url)];
 
       displayData = {
@@ -295,7 +345,7 @@ function ProductDetailPage({ onLogout }: { onLogout?: () => void }) {
                       <div>
                         <strong>สินค้าที่ร่วมรายการ:</strong>
                         <ul>
-                          {promo.products.map((p: any) => (
+                          {promo.products.map((p) => (
                             <li key={p.product_variant_id}>รหัสสินค้า: {p.product_variant_id} ราคาหลังลด: {p.discounted_price}</li>
                           ))}
                         </ul>
@@ -305,7 +355,7 @@ function ProductDetailPage({ onLogout }: { onLogout?: () => void }) {
                       <div>
                         <strong>บริการที่ร่วมรายการ:</strong>
                         <ul>
-                          {promo.services.map((s: any) => (
+                          {promo.services.map((s) => (
                             <li key={s.service_id}>บริการ: {s.service_id} ราคาหลังลด: {s.discounted_price}</li>
                           ))}
                         </ul>

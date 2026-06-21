@@ -21,6 +21,18 @@ interface BlogItem {
   slug?: string;
 }
 
+/** blog ดิบจาก API / localStorage (โครงสร้างไม่ตายตัว) */
+interface RawBlog {
+  id: number | string;
+  published_at?: string;
+  author?: string;
+  title?: string;
+  description?: string;
+  image_url?: string;
+  slug?: string;
+  is_published?: boolean;
+}
+
 const slugify = (title: string | undefined, id: number | string) => {
   return (
     title?.toString()
@@ -32,7 +44,7 @@ const slugify = (title: string | undefined, id: number | string) => {
   ) + (id ? '-' + id : '');
 };
 
-const mapBlog = (blog: any): BlogItem => ({
+const mapBlog = (blog: RawBlog): BlogItem => ({
   id: blog.id,
   date: blog.published_at ? new Date(blog.published_at).getDate().toString() : '',
   month: blog.published_at ? new Date(blog.published_at).toLocaleString('en-US', { month: 'short' }) : '',
@@ -48,8 +60,8 @@ const loadFromLocalStorage = (): BlogItem[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const blogs = JSON.parse(stored);
-      return blogs.filter((blog: any) => blog.is_published).map(mapBlog);
+      const blogs: RawBlog[] = JSON.parse(stored);
+      return blogs.filter((blog) => blog.is_published).map(mapBlog);
     }
   } catch (error) {
     console.error('Error loading from localStorage:', error);
@@ -63,7 +75,7 @@ const fetchPublishedBlogs = async (): Promise<BlogItem[]> => {
       signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.json();
+    const result: { success?: boolean; data?: RawBlog[] } = await response.json();
     if (result.success && result.data) {
       return result.data.map(mapBlog);
     }
