@@ -3,12 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { FormFieldEvent } from '@/types';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaSave, FaTimes, FaCar, FaPalette, FaSearch } from 'react-icons/fa';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import useDebounce from '../../hooks/useDebounce';
 
 const STICKER_API_URL = `${API_URL}/api/stickers`;
-const getToken = () => localStorage.getItem('adminToken');
-const authHeaders = (): Record<string, string> => ({ Authorization: `Bearer ${getToken()}` });
 
 /** ฟิลด์รูปทั้งหมดของรถ 1 คัน (base/paint ต่อชิ้นส่วน) */
 type CarImageField =
@@ -139,14 +137,14 @@ const ImageInputBox = ({ label, field, preview, onChange }: ImageInputBoxProps) 
 
 // Helper: Fetch cars
 const fetchCars = async (): Promise<StickerCar[]> => {
-  const response = await fetch(`${STICKER_API_URL}/cars`);
+  const response = await authFetch(`${STICKER_API_URL}/cars`);
   if (!response.ok) throw new Error('Failed to fetch cars');
   return response.json();
 };
 
 // Helper: Fetch colors
 const fetchColors = async (): Promise<StickerColor[]> => {
-  const response = await fetch(`${STICKER_API_URL}/colors`);
+  const response = await authFetch(`${STICKER_API_URL}/colors`);
   if (!response.ok) throw new Error('Failed to fetch colors');
   return response.json();
 };
@@ -210,7 +208,7 @@ function StickerDashboard() {
     mutationFn: async () => {
       const url = modal.mode === 'edit' ? `${STICKER_API_URL}/cars/${modal.data?.id}` : `${STICKER_API_URL}/cars`;
       const method = modal.mode === 'edit' ? 'PUT' : 'POST';
-      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(carForm) });
+      const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(carForm) });
 
       if (!res.ok) {
         // ดึง Error จาก Backend มาโชว์
@@ -238,7 +236,7 @@ function StickerDashboard() {
 
   const deleteCarMutation = useMutation({
     mutationFn: async (id: number) => {
-      await fetch(`${STICKER_API_URL}/cars/${id}`, { method: 'DELETE', headers: authHeaders() });
+      await authFetch(`${STICKER_API_URL}/cars/${id}`, { method: 'DELETE' });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sticker-cars'] }),
     onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
@@ -253,7 +251,7 @@ function StickerDashboard() {
     mutationFn: async () => {
       const url = modal.mode === 'edit' ? `${STICKER_API_URL}/colors/${modal.data?.id}` : `${STICKER_API_URL}/colors`;
       const method = modal.mode === 'edit' ? 'PUT' : 'POST';
-      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(colorForm) });
+      const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(colorForm) });
       if (!res.ok) throw new Error('Failed');
       return res;
     },
@@ -272,7 +270,7 @@ function StickerDashboard() {
 
   const deleteColorMutation = useMutation({
     mutationFn: async (id: number) => {
-      await fetch(`${STICKER_API_URL}/colors/${id}`, { method: 'DELETE', headers: authHeaders() });
+      await authFetch(`${STICKER_API_URL}/colors/${id}`, { method: 'DELETE' });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sticker-colors'] }),
     onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),

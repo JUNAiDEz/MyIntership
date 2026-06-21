@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from '../../styles/AdminTheme.module.css';
 import {
@@ -6,12 +6,9 @@ import {
   FaBox, FaList, FaSave, FaCamera
 } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
 import type { FormFieldEvent } from '@/types';
-
-// Helper ดึง Token
-const getToken = () => localStorage.getItem('adminToken');
 
 // --- Local types (ตาม field จริงที่หน้านี้ใช้) ---
 
@@ -67,9 +64,9 @@ function ServiceManagementPage() {
 
     const addCatMutation = useMutation({
       mutationFn: async () => {
-        const res = await fetch(`${API_URL}/api/services/categories`, {
+        const res = await authFetch(`${API_URL}/api/services/categories`, {
           method: 'POST',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ category_name: newCategoryName })
         });
         if (!res.ok) throw new Error((await res.json()).message || 'เพิ่มหมวดหมู่ไม่สำเร็จ');
@@ -122,19 +119,11 @@ function ServiceManagementPage() {
   const [imageUploadError, setImageUploadError] = useState('');
   const [createError, setCreateError] = useState('');
 
-  // --- Headers Helper ---
-  const headers = useMemo(() => {
-    const h: Record<string, string> = { 'Content-Type': 'application/json' };
-    const token = getToken();
-    if (token) h.Authorization = `Bearer ${token}`;
-    return h;
-  }, []);
-
   // --- 2. Fetch Categories Dropdown ---
   const { data: categories = [] } = useQuery<CategoryOption[]>({
     queryKey: ['service-categories'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/services/categories`, { headers });
+      const res = await authFetch(`${API_URL}/api/services/categories`);
       if (!res.ok) return [];
       const data: unknown = await res.json();
       const rows: Record<string, unknown>[] = Array.isArray(data)
@@ -155,7 +144,7 @@ function ServiceManagementPage() {
       qParams.append('all', '1');
       if (debouncedSearch) qParams.append('search', debouncedSearch);
 
-      const res = await fetch(`${API_URL}/api/services?${qParams.toString()}`, { headers });
+      const res = await authFetch(`${API_URL}/api/services?${qParams.toString()}`);
 
       if (!res.ok) {
         const text = await res.text();
@@ -208,9 +197,8 @@ function ServiceManagementPage() {
     try {
       const fd = new FormData();
       fd.append('image', file);
-      const res = await fetch(`${API_URL}/api/system/upload`, {
+      const res = await authFetch(`${API_URL}/api/system/upload`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
         body: fd
       });
       const data: { url?: string; image_url?: string; message?: string; error?: string } = await res.json();
@@ -247,9 +235,9 @@ function ServiceManagementPage() {
         method = 'PUT';
       }
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -276,7 +264,7 @@ function ServiceManagementPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_URL}/api/services/${id}/hard`, { method: 'DELETE', headers });
+      const res = await authFetch(`${API_URL}/api/services/${id}/hard`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete service.');
       return res.json().catch(() => ({}));
     },

@@ -1,16 +1,14 @@
-import { useState, useMemo, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { FormFieldEvent, ModalState } from '@/types';
 import styles from '../../styles/AdminTheme.module.css'; // ปรับ Path ให้ตรงกับโปรเจกต์ของคุณ
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaCamera, FaImage } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
 
 // 🔥 Import DashboardHeader เข้ามาใช้งาน
 import DashboardHeader from '../../components/DashboardHeader';
-
-const getToken = () => localStorage.getItem('adminToken');
 
 /** หนึ่งตัวแทนจำหน่าย/แบรนด์ ตาม field จริงจาก backend */
 interface Dealer {
@@ -54,12 +52,6 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
   const [uploadingImage, setUploadingImage] = useState(false);
   const [createError, setCreateError] = useState('');
 
-  // --- Headers Helper ---
-  const headers = useMemo(() => ({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${getToken()}`
-  }), []);
-
   // --- Helper: Convert File to Base64 ---
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -74,7 +66,7 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
   const { data: dealers = [], isLoading: loading } = useQuery({
     queryKey: ['dealers'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/dealers`, { headers });
+      const res = await authFetch(`${API_URL}/api/dealers`);
       if (!res.ok) throw new Error('Failed to fetch dealers');
       const result = await res.json() as Dealer[] | { data?: Dealer[] };
       // เรียงลำดับตาม display_order จากน้อยไปมาก
@@ -127,9 +119,9 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
         method = 'PUT';
       }
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -145,7 +137,7 @@ export default function DealerManagementPage({ onLogout }: { onLogout?: () => vo
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_URL}/api/dealers/${id}`, { method: 'DELETE', headers });
+      const res = await authFetch(`${API_URL}/api/dealers/${id}`, { method: 'DELETE' });
       if(!res.ok) throw new Error('ลบไม่สำเร็จ');
       return res.json();
     },

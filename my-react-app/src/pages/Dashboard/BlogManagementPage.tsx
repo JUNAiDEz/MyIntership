@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaStar, FaTimes, FaSearch } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
 import type { FormFieldEvent, ModalState } from '@/types';
 
@@ -68,8 +68,6 @@ interface BlogForm {
   gallery_images: GalleryImage[];
 }
 
-const getToken = () => localStorage.getItem('adminToken');
-
 export default function BlogManagementPage() {
   const PLACEHOLDER_IMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%' fill='%23f3f4f6'><rect width='100%' height='100%' fill='%23f3f4f6'/><text x='50%' y='50%' dy='.3em' fill='%239ca3af' font-size='12' text-anchor='middle'>No Image</text></svg>";
 
@@ -103,12 +101,6 @@ export default function BlogManagementPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [createError, setCreateError] = useState('');
 
-  // --- Headers Helper ---
-  const headers = useMemo(() => ({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${getToken()}`
-  }), []);
-
   // --- Helper: Convert File to Base64 ---
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -124,7 +116,7 @@ export default function BlogManagementPage() {
     queryKey: ['blogs'],
     queryFn: async () => {
       const url = `${API_URL}/api/blog?limit=1000`;
-      const res = await fetch(url, { headers });
+      const res = await authFetch(url);
       if (!res.ok) throw new Error('Failed to fetch blogs');
       const result = await res.json() as { success?: boolean; data?: RawBlog[] };
       if (result.success && result.data) {
@@ -149,7 +141,7 @@ export default function BlogManagementPage() {
   const { data: categories = [] } = useQuery<BlogCategory[]>({
     queryKey: ['blog-categories'],
     queryFn: async () => {
-      const catRes = await fetch(`${API_URL}/api/blog/categories`, { headers });
+      const catRes = await authFetch(`${API_URL}/api/blog/categories`);
       if (!catRes.ok) throw new Error('Failed to fetch categories');
       const catData = await catRes.json() as BlogCategory[] | { data?: BlogCategory[] };
       return Array.isArray(catData) ? catData : catData.data || [];
@@ -268,9 +260,9 @@ export default function BlogManagementPage() {
         method = 'PUT';
       }
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -286,7 +278,7 @@ export default function BlogManagementPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_URL}/api/blogs/${id}`, { method: 'DELETE', headers });
+      const res = await authFetch(`${API_URL}/api/blogs/${id}`, { method: 'DELETE' });
       if(!res.ok) throw new Error('Delete failed');
       return res.json();
     },

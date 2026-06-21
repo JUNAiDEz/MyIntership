@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useDebounce from '../../hooks/useDebounce';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import styles from '../../styles/AdminTheme.module.css';
 import {
   FaEdit,
@@ -15,8 +15,6 @@ import {
 } from 'react-icons/fa';
 import { HasPermission } from '../../utils/ProtectedRoute';
 import type { FormFieldEvent } from '@/types';
-
-const getToken = () => localStorage.getItem('adminToken');
 
 // Helper: Format DateTime for <input type="datetime-local">
 const formatDateTimeForInput = (isoString: string | null | undefined): string => {
@@ -174,13 +172,6 @@ function PromotionManagementPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [createError, setCreateError] = useState('');
 
-  const headers = useMemo(() => {
-    const h: Record<string, string> = { 'Content-Type': 'application/json' };
-    const token = getToken();
-    if (token) h.Authorization = `Bearer ${token}`;
-    return h;
-  }, []);
-
   // --- 1. Fetch Promotions ---
   const { data: promotions = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: ['promotions', debouncedSearch],
@@ -189,7 +180,7 @@ function PromotionManagementPage() {
       qParams.append('all', '1');
       if (debouncedSearch) qParams.append('search', debouncedSearch);
 
-      const res = await fetch(`${API_URL}/api/sales/promotions?${qParams.toString()}`, { headers });
+      const res = await authFetch(`${API_URL}/api/sales/promotions?${qParams.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch promotions');
 
       const data: unknown = await res.json();
@@ -218,7 +209,7 @@ function PromotionManagementPage() {
   const { data: allProducts = [], isLoading: productsLoading } = useQuery({
     queryKey: ['promotion-master-products'],
     queryFn: async () => {
-      const pRes = await fetch(`${API_URL}/api/inventory/products?all=1`, { headers });
+      const pRes = await authFetch(`${API_URL}/api/inventory/products?all=1`);
       if (!pRes.ok) return [] as MasterProduct[];
       const pData: unknown = await pRes.json();
       return (Array.isArray(pData) ? pData : (pData as { items?: MasterProduct[] }).items || []) as MasterProduct[];
@@ -227,7 +218,7 @@ function PromotionManagementPage() {
   const { data: allServices = [], isLoading: servicesLoading } = useQuery({
     queryKey: ['promotion-master-services'],
     queryFn: async () => {
-      const sRes = await fetch(`${API_URL}/api/services?all=1`, { headers });
+      const sRes = await authFetch(`${API_URL}/api/services?all=1`);
       if (!sRes.ok) return [] as MasterService[];
       const sData: unknown = await sRes.json();
       return (Array.isArray(sData) ? sData : (sData as { items?: MasterService[] }).items || []) as MasterService[];
@@ -335,9 +326,8 @@ function PromotionManagementPage() {
     try {
       const fd = new FormData();
       fd.append('image', file);
-      const res = await fetch(`${API_URL}/api/system/upload`, {
+      const res = await authFetch(`${API_URL}/api/system/upload`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
         body: fd
       });
       const data: { url?: string; image_url?: string; message?: string } = await res.json();
@@ -375,7 +365,7 @@ function PromotionManagementPage() {
         method = 'PUT';
       }
 
-      const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
+      const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) {
         const errData: { message?: string } = await res.json();
         throw new Error(errData.message || 'Failed to save promotion');
@@ -397,7 +387,7 @@ function PromotionManagementPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await fetch(`${API_URL}/api/sales/promotions/${id}`, { method: 'DELETE', headers });
+      await authFetch(`${API_URL}/api/sales/promotions/${id}`, { method: 'DELETE' });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['promotions'] }),
     onError: () => alert('Failed to delete'),
@@ -410,9 +400,9 @@ function PromotionManagementPage() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, current }: { id: number; current: boolean }) => {
-      await fetch(`${API_URL}/api/sales/promotions/${id}/toggle_status`, {
+      await authFetch(`${API_URL}/api/sales/promotions/${id}/toggle_status`, {
         method: 'PATCH',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !current })
       });
     },

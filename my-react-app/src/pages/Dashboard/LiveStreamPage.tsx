@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaVideo, FaPlay, FaStop, FaSync, FaExclamationTriangle, FaCircle } from 'react-icons/fa';
 import type { FormFieldEvent } from '@/types';
+import { authFetch } from '../../utils/api';
 
 const API_BASE = 'https://apitop.gt7dev.com';
 
@@ -39,7 +40,7 @@ const LiveStreamPage = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/api/cameras`);
+      const res = await authFetch(`${API_BASE}/api/cameras`);
       if (!res.ok) throw new Error('ไม่สามารถโหลดข้อมูลกล้องได้');
       const data = (await res.json()) as Camera[];
       setCameras(data);
@@ -58,7 +59,7 @@ const LiveStreamPage = () => {
 
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/api/cameras/${selectedCameraId}/start`, {
+      const res = await authFetch(`${API_BASE}/api/cameras/${selectedCameraId}/start`, {
         method: 'POST',
         headers
       });
@@ -75,7 +76,7 @@ const LiveStreamPage = () => {
     if (!selectedCameraId) return;
 
     try {
-      await fetch(`${API_BASE}/api/cameras/${selectedCameraId}/stop`, {
+      await authFetch(`${API_BASE}/api/cameras/${selectedCameraId}/stop`, {
         method: 'POST',
         headers
       });

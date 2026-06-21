@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { FormFieldEvent } from '@/types';
+import { authFetch } from '@/utils/api';
 // [CHANGE] Use Global Theme
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaSave, FaPlus, FaTimes, FaBuilding, FaPhone, FaUser, FaSearch } from 'react-icons/fa';
@@ -52,21 +53,16 @@ interface NewSupplierForm {
   email: string;
 }
 
-const authHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('adminToken');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 // Helper: Fetch products
 const fetchProducts = async (): Promise<InventoryProduct[]> => {
-  const res = await fetch(`${API_URL}/api/inventory/products?all=1`, { headers: authHeaders() });
+  const res = await authFetch(`${API_URL}/api/inventory/products?all=1`);
   const data = await res.json();
   return Array.isArray(data) ? data : (data.items || []);
 };
 
 // Helper: Fetch suppliers
 const fetchSuppliers = async (): Promise<Supplier[]> => {
-  const res = await fetch(`${API_URL}/api/inventory/suppliers`, { headers: authHeaders() });
+  const res = await authFetch(`${API_URL}/api/inventory/suppliers`);
   let data: unknown = [];
   try {
     data = await res.json();
@@ -130,11 +126,10 @@ function ProductSupplierManager() {
         ]
       };
 
-      const res = await fetch(`${API_URL}/api/inventory/products/${productId}`, {
+      const res = await authFetch(`${API_URL}/api/inventory/products/${productId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders()
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
@@ -161,11 +156,10 @@ function ProductSupplierManager() {
 
   const createSupplierMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_URL}/api/inventory/suppliers`, {
+      const res = await authFetch(`${API_URL}/api/inventory/suppliers`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders()
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(newSupplier)
       });

@@ -5,6 +5,7 @@ import Footer from '../../components/Layout/Footer';
 
 import React, { useState, useEffect } from 'react';
 import type { FormFieldEvent } from '@/types';
+import { authFetch } from '../../utils/api';
 
 /** หนึ่ง section ใน layout (ตรงกับ Block ของ PageBuilder) */
 interface PageSection {
@@ -59,7 +60,7 @@ const ServicePreviewManagementPage = () => {
       setError(null);
       try {
         // ดึงข้อมูล Config ของ ID 1
-        const res = await fetch(`${API_BASE_URL}/1`);
+        const res = await authFetch(`${API_BASE_URL}/1`);
 
         // ถ้าขึ้น Unexpected token '<' แสดงว่า URL ผิด หรือ Server ส่งหน้า HTML กลับมา
         if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลจาก Server ได้');
@@ -102,15 +103,10 @@ const ServicePreviewManagementPage = () => {
 
   const saveData = async () => {
     try {
-      // ดึง Token จาก localStorage (ที่เก็บไว้ตอน Login)
-      const token = localStorage.getItem('adminToken');
-      // ...removed log...
-
-      const res = await fetch(`${API_BASE_URL}/save`, {
+      const res = await authFetch(`${API_BASE_URL}/save`, {
         method: 'POST', // เปลี่ยนเป็น POST ตาม Backend
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // ส่ง Token ไปให้ Middleware ตรวจสอบ
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           service_id: 1, // กำหนด ID ที่ต้องการบันทึก

@@ -4,11 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaTimes, FaSearch, FaCar } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
 import type { AdminBrand, AdminCarModel, ApiEnvelope, FormFieldEvent, ModalState } from '@/types';
-
-const getToken = () => localStorage.getItem('adminToken');
 
 /** แถวรถที่ map แล้วสำหรับแสดงในกริด/ฟอร์ม (flat shape ภายในหน้า) */
 interface CarRow {
@@ -84,19 +82,11 @@ function CarManagementPage() {
   const [imageUploadError, setImageUploadError] = useState('');
   const [createError, setCreateError] = useState('');
 
-  // --- Headers ---
-  const headers = useMemo(() => {
-    const h: Record<string, string> = { 'Content-Type': 'application/json' };
-    const token = getToken();
-    if (token) h.Authorization = `Bearer ${token}`;
-    return h;
-  }, []);
-
   // --- 1. Fetch Data ---
   const brandsQuery = useQuery<AdminBrand[]>({
     queryKey: ['car-brands'],
     queryFn: async () => {
-      const brandRes = await fetch(`${API_URL}/api/vehicles/master/brands`, { headers });
+      const brandRes = await authFetch(`${API_URL}/api/vehicles/master/brands`);
       if (!brandRes.ok) throw new Error('ไม่สามารถโหลดยี่ห้อรถได้');
       const brandData: ApiEnvelope<AdminBrand[]> = await brandRes.json();
       return brandData.data || [];
@@ -106,7 +96,7 @@ function CarManagementPage() {
   const carsQuery = useQuery<CarRow[]>({
     queryKey: ['cars'],
     queryFn: async () => {
-      const modelRes = await fetch(`${API_URL}/api/vehicles/master/models`, { headers });
+      const modelRes = await authFetch(`${API_URL}/api/vehicles/master/models`);
       if (!modelRes.ok) throw new Error('ไม่สามารถโหลดรุ่นรถได้');
       const modelData: ApiEnvelope<AdminCarModel[]> = await modelRes.json();
       return (modelData.data || []).map((car): CarRow => ({
@@ -215,7 +205,7 @@ function CarManagementPage() {
         method = 'PUT';
       }
 
-      const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
+      const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const result: ApiEnvelope<unknown> = await res.json();
       if (!res.ok) throw new Error(result.message || 'บันทึกไม่สำเร็จ');
       return result;
@@ -226,7 +216,7 @@ function CarManagementPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_URL}/api/vehicles/master/models/${id}`, { method: 'DELETE', headers });
+      const res = await authFetch(`${API_URL}/api/vehicles/master/models/${id}`, { method: 'DELETE' });
       const result: ApiEnvelope<unknown> = await res.json();
       if (!res.ok) throw new Error(result.message || 'ลบไม่สำเร็จ');
       return result;

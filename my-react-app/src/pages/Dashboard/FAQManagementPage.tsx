@@ -3,11 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { FormFieldEvent, ModalState } from '@/types';
 import styles from './ManagementPage.module.css';
 import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
+import { authFetch } from '@/utils/api';
 
 // API endpoint
 const API_URL = import.meta.env.VITE_API_URL;
-const getToken = () => localStorage.getItem('adminToken');
-const authHeaders = (): Record<string, string> => ({ Authorization: `Bearer ${getToken()}` });
 
 /** หนึ่งรายการ FAQ ตาม field จริงจาก backend */
 interface Faq {
@@ -33,7 +32,7 @@ interface FaqForm {
 // Helper: Fetch all FAQs from API
 const fetchFaqs = async (): Promise<Faq[]> => {
   try {
-    const response = await fetch(`${API_URL}/api/faq?limit=1000`, {
+    const response = await authFetch(`${API_URL}/api/faq?limit=1000`, {
       signal: AbortSignal.timeout(5000) // 5 second timeout
     });
 
@@ -89,7 +88,7 @@ export default function FAQManagementPage(){
       });
       const isEdit = modal.mode === 'edit';
       const url = isEdit ? `${API_URL}/api/faq/${modal.item?.id}` : `${API_URL}/api/faq`;
-      const res = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body });
+      const res = await authFetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body });
       if (!res.ok) throw new Error('Failed to save FAQ');
       return res.json();
     },
@@ -99,7 +98,7 @@ export default function FAQManagementPage(){
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_URL}/api/faq/${id}`, { method: 'DELETE', headers: authHeaders() });
+      const res = await authFetch(`${API_URL}/api/faq/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete FAQ');
       return res.json();
     },
@@ -109,7 +108,7 @@ export default function FAQManagementPage(){
 
   const toggleMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_URL}/api/faq/${id}/toggle-active`, { method: 'PATCH', headers: authHeaders() });
+      const res = await authFetch(`${API_URL}/api/faq/${id}/toggle-active`, { method: 'PATCH' });
       if (!res.ok) throw new Error('Failed to toggle status');
       return res.json();
     },

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaBan, FaCheckCircle, FaLock, FaSave, FaTimes, FaSearch, FaUserShield, FaUserCog, FaUsers } from 'react-icons/fa';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import useDebounce from '../../hooks/useDebounce';
 import type { FormFieldEvent } from '@/types';
 
@@ -119,18 +119,11 @@ function UserManagementPage() {
   const [showCreatePermModal, setShowCreatePermModal] = useState(false);
   const [permForm, setPermForm] = useState<PermForm>({ resource: '', action: '', description: '' });
 
-  const headers = useMemo(() => {
-    const h: Record<string, string> = { 'Content-Type': 'application/json' };
-    const token = getToken();
-    if (token) h.Authorization = `Bearer ${token}`;
-    return h;
-  }, []);
-
   // --- 1. Fetch Data ---
   const rolesQuery = useQuery<Role[]>({
     queryKey: ['user-roles'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/auth/roles`, { headers });
+      const res = await authFetch(`${API_URL}/api/auth/roles`);
       if (!res.ok) throw new Error('Failed to load roles');
       return res.json() as Promise<Role[]>;
     },
@@ -139,7 +132,7 @@ function UserManagementPage() {
   const usersQuery = useQuery<Employee[]>({
     queryKey: ['users'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/auth/employees`, { headers });
+      const res = await authFetch(`${API_URL}/api/auth/employees`);
       if (!res.ok) throw new Error('Failed to load users');
       return res.json() as Promise<Employee[]>;
     },
@@ -148,7 +141,7 @@ function UserManagementPage() {
   const permissionsQuery = useQuery<PermissionItem[]>({
     queryKey: ['user-permissions'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/auth/permissions`, { headers });
+      const res = await authFetch(`${API_URL}/api/auth/permissions`);
       if (!res.ok) throw new Error('Failed to load permissions');
       const data = (await res.json()) as { data?: PermissionItem[] } | PermissionItem[];
       return (Array.isArray(data) ? data : data.data) || [];
@@ -199,7 +192,7 @@ function UserManagementPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = { ...createForm, role_id: Number(createForm.role_id) };
-      const res = await fetch(`${API_URL}/api/auth/employees`, { method: 'POST', headers, body: JSON.stringify(payload) });
+      const res = await authFetch(`${API_URL}/api/auth/employees`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || 'Failed to create user');
       return result;
@@ -210,7 +203,7 @@ function UserManagementPage() {
 
   const toggleStatusMutation = useMutation({
     mutationFn: async (userId: number) => {
-      const res = await fetch(`${API_URL}/api/auth/users/${userId}/status`, { method: 'PATCH', headers });
+      const res = await authFetch(`${API_URL}/api/auth/users/${userId}/status`, { method: 'PATCH' });
       if (!res.ok) throw new Error('Failed to update status');
       return res.json();
     },
@@ -233,7 +226,7 @@ function UserManagementPage() {
   const fetchRolePermissions = async (roleId: number | null) => {
     if (roleId == null) return;
     try {
-      const res = await fetch(`${API_URL}/api/auth/roles/${roleId}/permissions`, { headers });
+      const res = await authFetch(`${API_URL}/api/auth/roles/${roleId}/permissions`);
       if (res.ok) {
           const data = (await res.json()) as { data: { permissions_table?: PermissionItem[] } };
           setSelectedRolePermissions((data.data.permissions_table || []).map((p) => p.permission_id));
@@ -249,8 +242,8 @@ function UserManagementPage() {
 
   const savePermissionsMutation = useMutation({
     mutationFn: async () => {
-      await fetch(`${API_URL}/api/auth/roles/${selectedRoleId}/permissions`, {
-        method: 'POST', headers, body: JSON.stringify({ permission_ids: selectedRolePermissions })
+      await authFetch(`${API_URL}/api/auth/roles/${selectedRoleId}/permissions`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ permission_ids: selectedRolePermissions })
       });
     },
     onSuccess: () => { setEditingPermissions(false); refresh(); },
@@ -265,7 +258,7 @@ function UserManagementPage() {
   const fetchUserPermissions = async (userId: number | null) => {
     if (userId == null) return;
     try {
-      const res = await fetch(`${API_URL}/api/auth/users/${userId}/permissions`, { headers });
+      const res = await authFetch(`${API_URL}/api/auth/users/${userId}/permissions`);
       if (res.ok) {
           const data = (await res.json()) as { data?: PermissionItem[] };
           setSelectedUserPermissions((data.data || []).map((p) => p.permission_id));
@@ -281,8 +274,8 @@ function UserManagementPage() {
 
   const saveUserPermissionsMutation = useMutation({
     mutationFn: async () => {
-      await fetch(`${API_URL}/api/auth/users/${selectedUserId}/permissions`, {
-        method: 'POST', headers, body: JSON.stringify({ permission_ids: selectedUserPermissions })
+      await authFetch(`${API_URL}/api/auth/users/${selectedUserId}/permissions`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ permission_ids: selectedUserPermissions })
       });
     },
     onSuccess: () => { setEditingUserPermissions(false); refresh(); },
@@ -296,7 +289,7 @@ function UserManagementPage() {
 
   const createPermissionMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_URL}/api/auth/permissions`, { method: 'POST', headers, body: JSON.stringify(permForm) });
+      const res = await authFetch(`${API_URL}/api/auth/permissions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(permForm) });
       if (!res.ok) throw new Error('Failed to create permission');
       return res.json();
     },

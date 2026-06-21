@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaStar, FaTimes, FaSearch, FaImages } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
 import type { FormFieldEvent, ModalState } from '@/types';
-
-const getToken = () => localStorage.getItem('adminToken');
 
 // --- Local types (map ตาม field จริงจาก backend portfolio endpoints) ---
 
@@ -123,12 +121,6 @@ export default function PortfolioManagementPage() {
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
 
-  // --- Headers Helper ---
-  const headers = useMemo(() => ({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${getToken()}`
-  }), []);
-
   // --- 1. Fetch Data ---
   const fetchPortfolios = useCallback(async () => {
     setLoading(true);
@@ -137,7 +129,7 @@ export default function PortfolioManagementPage() {
       qParams.append('all', '1');
       if (debouncedSearch) qParams.append('search', debouncedSearch);
 
-      const res = await fetch(`${API_URL}/api/portfolio/projects?${qParams.toString()}`, { headers });
+      const res = await authFetch(`${API_URL}/api/portfolio/projects?${qParams.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch projects');
 
       const data: unknown = await res.json();
@@ -155,15 +147,15 @@ export default function PortfolioManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, headers]);
+  }, [debouncedSearch]);
 
   // Fetch Dropdown Data
   useEffect(() => {
     const fetchDropdowns = async () => {
       try {
         const [catRes, modelsRes] = await Promise.all([
-          fetch(`${API_URL}/api/portfolio/categories`, { headers }),
-          fetch(`${API_URL}/api/vehicles/master/models`, { headers })
+          authFetch(`${API_URL}/api/portfolio/categories`),
+          authFetch(`${API_URL}/api/vehicles/master/models`)
         ]);
 
         if (catRes.ok) {
@@ -193,7 +185,7 @@ export default function PortfolioManagementPage() {
       }
     };
     fetchDropdowns();
-  }, [headers]);
+  }, []);
 
   useEffect(() => {
     fetchPortfolios();
@@ -230,9 +222,8 @@ export default function PortfolioManagementPage() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const res = await fetch(`${API_URL}/api/system/upload`, {
+      const res = await authFetch(`${API_URL}/api/system/upload`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
         body: formData
       });
       const data = await res.json() as { url?: string; image_url?: string; message?: string };
@@ -255,9 +246,8 @@ export default function PortfolioManagementPage() {
       try {
         const formData = new FormData();
         formData.append('image', file);
-        const res = await fetch(`${API_URL}/api/system/upload`, {
+        const res = await authFetch(`${API_URL}/api/system/upload`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${getToken()}` },
             body: formData
         });
         const data = await res.json() as { url?: string; image_url?: string };
@@ -321,9 +311,9 @@ export default function PortfolioManagementPage() {
         method = 'PUT';
       }
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -344,7 +334,7 @@ export default function PortfolioManagementPage() {
   const handleDelete = async (id: number | undefined) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
     try {
-      const res = await fetch(`${API_URL}/api/portfolio/projects/${id}`, { method: 'DELETE', headers });
+      const res = await authFetch(`${API_URL}/api/portfolio/projects/${id}`, { method: 'DELETE' });
       if(!res.ok) throw new Error('Delete failed');
       fetchPortfolios();
     } catch (err) {

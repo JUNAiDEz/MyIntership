@@ -9,11 +9,9 @@ import {
 import ProductSupplierManager from './ProductSupplierManager';
 import ProductCarModelManager from './ProductCarModelManager';
 import useDebounce from '../../hooks/useDebounce';
-import { API_URL } from '../../utils/api';
+import { API_URL, authFetch } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
 import type { FormFieldEvent } from '@/types';
-
-const getToken = () => localStorage.getItem('adminToken');
 
 // --- Local types (เฉพาะหน้านี้) ---
 interface Category { category_id: number; category_name: string }
@@ -160,9 +158,9 @@ function ProductManagementPage() {
     if (!editCategoryName.trim()) return;
     setManageLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/inventory/categories/${editCategoryId}`, {
+      const res = await authFetch(`${API_URL}/api/inventory/categories/${editCategoryId}`, {
         method: 'PUT',
-        headers,
+        headers: jsonHeaders,
         body: JSON.stringify({ category_name: editCategoryName })
       });
       if (!res.ok) throw new Error((await res.json()).message || 'แก้ไขหมวดหมู่ไม่สำเร็จ');
@@ -179,9 +177,9 @@ function ProductManagementPage() {
     if (!editTypeName.trim()) return;
     setManageLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/inventory/types/${editTypeId}`, {
+      const res = await authFetch(`${API_URL}/api/inventory/types/${editTypeId}`, {
         method: 'PUT',
-        headers,
+        headers: jsonHeaders,
         body: JSON.stringify({ type_name: editTypeName, description: '' })
       });
       if (!res.ok) throw new Error((await res.json()).message || 'แก้ไขประเภทไม่สำเร็จ');
@@ -198,9 +196,9 @@ function ProductManagementPage() {
     if (!editBrandName.trim()) return;
     setManageLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/inventory/brands/${editBrandId}`, {
+      const res = await authFetch(`${API_URL}/api/inventory/brands/${editBrandId}`, {
         method: 'PUT',
-        headers,
+        headers: jsonHeaders,
         body: JSON.stringify({ brand_name: editBrandName })
       });
       if (!res.ok) throw new Error((await res.json()).message || 'แก้ไขแบรนด์ไม่สำเร็จ');
@@ -255,12 +253,7 @@ function ProductManagementPage() {
   const [togglingIds, setTogglingIds] = useState<Array<number | string>>([]);
 
   // --- Helper ---
-  const headers = useMemo(() => {
-    const h: Record<string, string> = { 'Content-Type': 'application/json' };
-    const token = getToken();
-    if (token) h.Authorization = `Bearer ${token}`;
-    return h;
-  }, []);
+  const jsonHeaders = useMemo(() => ({ 'Content-Type': 'application/json' }), []);
 
   // --- Fetching Logic ---
   const { data: products = [], isLoading: loading, error: queryError } = useQuery({
@@ -270,7 +263,7 @@ function ProductManagementPage() {
       qParams.append('all', '1');
       if (debouncedSearch) qParams.append('search', debouncedSearch);
 
-      const res = await fetch(`${API_URL}/api/inventory/products?${qParams.toString()}`, { headers });
+      const res = await authFetch(`${API_URL}/api/inventory/products?${qParams.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch products');
 
       const data = await res.json();
@@ -306,10 +299,10 @@ function ProductManagementPage() {
     queryKey: ['product-dropdowns'],
     queryFn: async () => {
       const [catRes, brandRes, supRes, typeRes] = await Promise.all([
-        fetch(`${API_URL}/api/inventory/categories`, { headers }),
-        fetch(`${API_URL}/api/inventory/brands`, { headers }),
-        fetch(`${API_URL}/api/inventory/suppliers`, { headers }),
-        fetch(`${API_URL}/api/inventory/types`, { headers })
+        authFetch(`${API_URL}/api/inventory/categories`),
+        authFetch(`${API_URL}/api/inventory/brands`),
+        authFetch(`${API_URL}/api/inventory/suppliers`),
+        authFetch(`${API_URL}/api/inventory/types`)
       ]);
       return {
         categories: catRes.ok ? (await catRes.json()).items || [] : [],
@@ -328,9 +321,9 @@ function ProductManagementPage() {
     if (!newCategory.trim()) return;
     setManageLoading(true); setManageError('');
     try {
-      const res = await fetch(`${API_URL}/api/inventory/categories`, {
+      const res = await authFetch(`${API_URL}/api/inventory/categories`, {
         method: 'POST',
-        headers,
+        headers: jsonHeaders,
         body: JSON.stringify({ category_name: newCategory })
       });
       if (!res.ok) throw new Error((await res.json()).message || 'เพิ่มหมวดหมู่ไม่สำเร็จ');
@@ -341,15 +334,15 @@ function ProductManagementPage() {
   };
   const handleDeleteCategory = async (id: number) => {
     if (!window.confirm('ยืนยันลบหมวดหมู่?')) return;
-    try { await fetch(`${API_URL}/api/inventory/categories/${id}`, { method: 'DELETE', headers }); queryClient.invalidateQueries({ queryKey: ['product-dropdowns'] }); } catch (err) { alert('ลบไม่สำเร็จ'); }
+    try { await authFetch(`${API_URL}/api/inventory/categories/${id}`, { method: 'DELETE' }); queryClient.invalidateQueries({ queryKey: ['product-dropdowns'] }); } catch (err) { alert('ลบไม่สำเร็จ'); }
   };
   const handleAddType = async () => {
     if (!newType.trim()) return;
     setManageLoading(true); setManageError('');
     try {
-      const res = await fetch(`${API_URL}/api/inventory/types`, {
+      const res = await authFetch(`${API_URL}/api/inventory/types`, {
         method: 'POST',
-        headers,
+        headers: jsonHeaders,
         body: JSON.stringify({ type_name: newType })
       });
       if (!res.ok) throw new Error((await res.json()).message || 'เพิ่มประเภทไม่สำเร็จ');
@@ -360,15 +353,15 @@ function ProductManagementPage() {
   };
   const handleDeleteType = async (id: number) => {
     if (!window.confirm('ยืนยันลบประเภท?')) return;
-    try { await fetch(`${API_URL}/api/inventory/types/${id}`, { method: 'DELETE', headers }); queryClient.invalidateQueries({ queryKey: ['product-dropdowns'] }); } catch (err) { alert('ลบไม่สำเร็จ'); }
+    try { await authFetch(`${API_URL}/api/inventory/types/${id}`, { method: 'DELETE' }); queryClient.invalidateQueries({ queryKey: ['product-dropdowns'] }); } catch (err) { alert('ลบไม่สำเร็จ'); }
   };
   const handleAddBrand = async () => {
     if (!newBrand.trim()) return;
     setManageLoading(true); setManageError('');
     try {
-      const res = await fetch(`${API_URL}/api/inventory/brands`, {
+      const res = await authFetch(`${API_URL}/api/inventory/brands`, {
         method: 'POST',
-        headers,
+        headers: jsonHeaders,
         body: JSON.stringify({ brand_name: newBrand })
       });
       if (!res.ok) throw new Error((await res.json()).message || 'เพิ่มแบรนด์ไม่สำเร็จ');
@@ -379,7 +372,7 @@ function ProductManagementPage() {
   };
   const handleDeleteBrand = async (id: number) => {
     if (!window.confirm('ยืนยันลบแบรนด์?')) return;
-    try { await fetch(`${API_URL}/api/inventory/brands/${id}`, { method: 'DELETE', headers }); queryClient.invalidateQueries({ queryKey: ['product-dropdowns'] }); } catch (err) { alert('ลบไม่สำเร็จ'); }
+    try { await authFetch(`${API_URL}/api/inventory/brands/${id}`, { method: 'DELETE' }); queryClient.invalidateQueries({ queryKey: ['product-dropdowns'] }); } catch (err) { alert('ลบไม่สำเร็จ'); }
   };
 
   const handleImageUpload = async (file: File | undefined) => {
@@ -387,8 +380,8 @@ function ProductManagementPage() {
     setImageFile(file); setUploadingImage(true); setImageUploadError('');
     try {
       const fd = new FormData(); fd.append('image', file);
-      const res = await fetch(`${API_URL}/api/system/upload`, {
-        method: 'POST', headers: { 'Authorization': `Bearer ${getToken()}` }, body: fd
+      const res = await authFetch(`${API_URL}/api/system/upload`, {
+        method: 'POST', body: fd
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -424,7 +417,7 @@ function ProductManagementPage() {
         if (variantId) payload.variants[0].product_variant_id = variantId;
       }
       const url = modal.mode === 'edit' && modal.product ? `${API_URL}/api/inventory/products/${modal.product.id}` : `${API_URL}/api/inventory/products`;
-      const res = await fetch(url, { method: modal.mode === 'edit' ? 'PUT' : 'POST', headers, body: JSON.stringify(payload) });
+      const res = await authFetch(url, { method: modal.mode === 'edit' ? 'PUT' : 'POST', headers: jsonHeaders, body: JSON.stringify(payload) });
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || errData.error || 'บันทึกไม่สำเร็จ');
@@ -446,7 +439,7 @@ function ProductManagementPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number | string) => {
-      await fetch(`${API_URL}/api/inventory/products/${id}/hard`, { method: 'DELETE', headers });
+      await authFetch(`${API_URL}/api/inventory/products/${id}/hard`, { method: 'DELETE' });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
     onError: () => alert('ลบไม่สำเร็จ'),
@@ -459,8 +452,8 @@ function ProductManagementPage() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, field, currentValue }: { id: number | string; field: 'is_active' | 'is_popular'; currentValue: boolean }) => {
-      await fetch(`${API_URL}/api/inventory/products/${id}/flags`, {
-        method: 'PATCH', headers, body: JSON.stringify({ [field]: !currentValue })
+      await authFetch(`${API_URL}/api/inventory/products/${id}/flags`, {
+        method: 'PATCH', headers: jsonHeaders, body: JSON.stringify({ [field]: !currentValue })
       });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
@@ -528,9 +521,9 @@ function ProductManagementPage() {
         // เรียก PATCH /products/:id/flags ทันที
         if (modal.product && modal.product.id) {
           const payload = { [name]: newValue };
-          fetch(`${API_URL}/api/inventory/products/${modal.product.id}/flags`, {
+          authFetch(`${API_URL}/api/inventory/products/${modal.product.id}/flags`, {
             method: 'PATCH',
-            headers,
+            headers: jsonHeaders,
             body: JSON.stringify(payload)
           })
             .then((res) => res.ok ? queryClient.invalidateQueries({ queryKey: ['products'] }) : res.json().then((err: { message?: string }) => Promise.reject(err)))
@@ -731,8 +724,7 @@ function ProductDetailModal({
     const fetchAuditLogs = async () => {
         if (modal.product?.id) {
             try {
-                const token = localStorage.getItem('adminToken');
-                const res = await fetch(`${API_URL}/api/inventory/products/${modal.product.id}/auditlog`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const res = await authFetch(`${API_URL}/api/inventory/products/${modal.product.id}/auditlog`);
                 if (res.ok) {
                     const data = await res.json();
                     setAuditLogs((data.items || []).map((log: AuditLog) => ({
