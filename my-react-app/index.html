@@ -8,7 +8,13 @@
     <link rel="apple-touch-icon" href="/gt7icon.png" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    
+
+    <!-- Resource hints: เชื่อมต่อ origin สำคัญล่วงหน้า ลดเวลา handshake -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://apigame.gt7dev.com" />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+
     <title>GT7 Motor</title>
 
     <script>
@@ -27,6 +33,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

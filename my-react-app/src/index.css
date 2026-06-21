@@ -1,7 +1,246 @@
 /* ==========================================================================
+   0. TAILWIND v4 (Phase 1 setup)
+   --------------------------------------------------------------------------
+   - declaring layer order first lets @import statements stay valid.
+   - we import theme + utilities ONLY (NO preflight) so Tailwind utilities are
+     available without resetting/breaking the existing hand-written CSS below.
+     เมื่อแปลง component เป็น Tailwind ครบแล้ว ค่อยเปิด preflight (เปลี่ยนเป็น
+     `@import "tailwindcss";`) ในเฟสถัดไป
+   ========================================================================== */
+@layer theme, base, components, utilities;
+
+/* ==========================================================================
    1. FONTS IMPORT & THEME VARIABLES
    ========================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Mitr:wght@200;300;400;500;600;700&display=swap');
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* --------------------------------------------------------------------------
+   Tailwind design tokens -> map ไปยังตัวแปร Theme เดิม (light/dark)
+   ใช้ `inline` เพื่อให้ utility อ้างถึง var() ตรงๆ -> สลับธีมได้อัตโนมัติ
+   ทำให้ใช้ class ได้เลย เช่น: bg-accent, text-accent, bg-card, text-muted,
+   border-themed, font-header
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --color-accent: var(--accent-color);
+  --color-text-accent: var(--text-accent);
+  --color-bg-main: var(--bg-main);
+  --color-bg-card: var(--bg-card);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-themed: var(--border-color);
+
+  --font-sans: "Kanit", sans-serif;
+  --font-header: "Mitr", sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   Animations (ใช้ผ่าน utility เช่น animate-slide-down) — ย้ายมาจาก keyframes
+   ที่เคยอยู่ใน *.module.css เพื่อให้ component ใช้ Tailwind ได้
+   -------------------------------------------------------------------------- */
+@theme {
+  --animate-slide-down: slide-down 0.2s ease;
+  --animate-modal-in: modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-in-right: slide-in-right 0.35s ease;
+  --animate-slide-in-left: slide-in-left 0.35s ease;
+  --animate-zoom-in: zoom-in 0.8s ease-out;
+  --animate-fade-in: fade-in 0.3s ease;
+  --animate-slide-up: slide-up 0.3s ease;
+  --animate-fade-in-down: fade-in-down 0.4s ease forwards;
+  --animate-slide-down-20: slide-down-20 0.4s ease;
+  --animate-fade-in-down-header: fade-in-down-header 0.3s ease;
+  --animate-fade-in-left: fade-in-left 0.3s ease;
+}
+
+@keyframes fade-in-down-header {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-left {
+  from { opacity: 0; transform: translateX(-15px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down-20 {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes zoom-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   react-slick overrides — ย้ายมาจาก :global(...) ใน ProductCarousel.module.css
+   ใส่คลาส .product-carousel ที่ container ของ carousel เพื่อจำกัดขอบเขต
+   -------------------------------------------------------------------------- */
+.product-carousel .slick-track {
+  display: flex !important;
+  align-items: stretch;
+  margin-left: 0;
+}
+.product-carousel .slick-slide {
+  height: auto;
+  padding: 0 10px;
+}
+.product-carousel .slick-slide > div {
+  height: 100%;
+}
+.product-carousel .slick-dots {
+  bottom: -30px;
+}
+.product-carousel .slick-dots li button:before {
+  color: var(--text-muted);
+  opacity: 1;
+  transition: color 0.3s ease;
+}
+.product-carousel .slick-dots li.slick-active button:before {
+  color: var(--accent-color);
+}
+
+/* PosterCarousel — dots ปรับตำแหน่ง/ขนาดต่างจาก product-carousel */
+.poster-carousel .slick-dots {
+  bottom: -40px;
+}
+.poster-carousel .slick-dots li button:before {
+  color: var(--text-muted);
+  font-size: 12px;
+  opacity: 0.5;
+  transition: all 0.3s;
+}
+.poster-carousel .slick-dots li.slick-active button:before {
+  color: var(--accent-color);
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* --------------------------------------------------------------------------
+   ShopPage banner slider — mobile swipe (scroll-snap) overrides
+   ย้ายมาจาก :global(...) ใน ShopPage.module.css (.bannerSliderWrapper)
+   ใส่คลาส .shop-banner-slider ที่ <section> ของ banner slider
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .shop-banner-slider .slick-list {
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .shop-banner-slider .slick-list::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .shop-banner-slider .slick-track {
+    display: flex !important;
+    width: max-content !important;
+    transform: none !important;
+  }
+
+  .shop-banner-slider .slick-slide {
+    width: 85vw !important;
+    flex: 0 0 85vw !important;
+    float: none !important;
+    scroll-snap-align: center !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   PromotionPage flash deals slider — equal-height + mobile swipe overrides
+   ย้ายมาจาก :global(...) ใน PromotionPage.module.css (.carouselWrapper)
+   ใส่คลาส .promo-flash-slider ที่ <div> ของ carousel wrapper
+   -------------------------------------------------------------------------- */
+.promo-flash-slider .slick-track {
+  display: flex !important;
+  align-items: stretch;
+}
+.promo-flash-slider .slick-slide {
+  height: auto;
+  display: flex;
+  justify-content: center;
+  float: none !important;
+}
+.promo-flash-slider .slick-slide > div {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 768px) {
+  .promo-flash-slider .slick-list {
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .promo-flash-slider .slick-list::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .promo-flash-slider .slick-track {
+    display: flex !important;
+    width: max-content !important;
+    transform: none !important;
+  }
+
+  .promo-flash-slider .slick-slide {
+    width: 85vw !important;
+    flex: 0 0 85vw !important;
+    float: none !important;
+    scroll-snap-align: center !important;
+  }
+}
 
 /* ☀️ 1. ธีมสว่าง (Light Theme) - ค่าเริ่มต้นเมื่อไม่ได้กดสวิตช์ */
 :root {
