@@ -6,7 +6,7 @@ const db = require('../../models');
 const { User, Role, Customer, Employee, AuditLog } = db;
 const { Op } = require('sequelize');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret_key';
+const JWT_SECRET = require('../../config/secret');
 
 // สมัครสมาชิก (Register)
 exports.register = async (req, res) => {

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-// ใช้ค่าจาก .env หรือถ้าไม่มีให้ใช้ default (ควรตรงกับตอน Login)
-const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret_key';
+// JWT secret กลาง (fail-fast บน production ถ้าไม่ตั้งค่า)
+const JWT_SECRET = require('../config/secret');
 
 // Middleware 1: ตรวจสอบ Token (ว่าล็อกอินมาจริงไหม)
 exports.verifyToken = (req, res, next) => {

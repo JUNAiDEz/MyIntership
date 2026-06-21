@@ -12,12 +12,22 @@ const userPermissionController = require('./userPermissions.controller');
 // Middleware
 // ถอย 2 ขั้นจาก src/modules/auth/ -> src/middleware/auth.js
 const { verifyToken, checkRole } = require('../../middleware/auth');
+const rateLimit = require('express-rate-limit');
+
+// กัน brute-force: จำกัดการพยายาม login/register ต่อ IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 นาที
+  max: 10,                  // สูงสุด 10 ครั้ง/IP/หน้าต่างเวลา
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'พยายามเข้าสู่ระบบบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่' },
+});
 
 // ==========================================
 // Public Routes (ใครก็เข้าได้)
 // ==========================================
-router.post('/register', authController.register); // ลูกค้าสมัครสมาชิก
-router.post('/login', authController.login);       // ล็อกอิน (ได้ทั้งลูกค้าและพนักงาน)
+router.post('/register', authLimiter, authController.register); // ลูกค้าสมัครสมาชิก
+router.post('/login', authLimiter, authController.login);       // ล็อกอิน (ได้ทั้งลูกค้าและพนักงาน)
 
 // ==========================================
 // Private Routes (ต้อง Login ก่อน)
