@@ -51,8 +51,7 @@ function Nano({ onLogout }: { onLogout?: () => void }) {
     return pricingData.flatMap((brandGroup) => brandGroup.models.map((model) => ({ ...model, brand: brandGroup.brand })));
   }, []);
 
-  // param คง any: ServiceCatalog ส่ง PackageItem (ไม่มี index signature) ทำให้ใส่ ServiceModel แล้ว prop callback ไม่ assignable
-  const handleOpenPopup = (item: any) => { setModalData(item); setShowModal(true); };
+  const handleOpenPopup = (item: ServiceModel) => { setModalData(item); setShowModal(true); };
 
   const heroImage = 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?q=80&w=1600&auto=format&fit=crop';
   const pageUrl = typeof window !== 'undefined' ? window.location.href : 'https://front.gt7dev.com/services/product/nano';
@@ -122,7 +121,7 @@ function Nano({ onLogout }: { onLogout?: () => void }) {
 
         <ServiceCatalog 
           allPackages={allServicePackages} 
-          onOpenModal={handleOpenPopup} 
+          onOpenModal={handleOpenPopup as React.ComponentProps<typeof ServiceCatalog>['onOpenModal']}
         />
 
         <ReviewGallery reviewItems={reviewItems} />

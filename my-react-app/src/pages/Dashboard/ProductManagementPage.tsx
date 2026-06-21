@@ -47,6 +47,38 @@ interface ProductForm {
 }
 
 /** หนึ่งแถวสินค้าที่ map แล้วสำหรับแสดงในตาราง/ส่งเข้า modal */
+/** payload ดิบจาก backend (หลาย endpoint/alias) — field เป็น optional + index signature */
+interface RawVariant {
+  product_variant_id?: number;
+  sku?: string;
+  unit_price?: number | string;
+  stock_quantity?: number | string;
+  discount_percent?: number | string;
+  ProductVariantSuppliers?: Array<{ supplier_id?: number | string }>;
+  [key: string]: unknown;
+}
+interface RawProduct {
+  product_template_id?: number;
+  id?: number;
+  category_id?: number;
+  brand_id?: number;
+  product_name?: string;
+  slug?: string;
+  description?: string;
+  product_type_id?: number;
+  is_active?: boolean;
+  is_popular?: boolean;
+  category_name?: string;
+  brand_name?: string;
+  type_name?: string;
+  variants?: RawVariant[];
+  images?: Array<{ image_url?: string }>;
+  Category?: { category_name?: string };
+  Brand?: { brand_name?: string };
+  ProductType?: { product_type_id?: number; type_name?: string };
+  [key: string]: unknown;
+}
+
 interface ProductRow {
   id: number | string;
   title: string;
@@ -242,14 +274,14 @@ function ProductManagementPage() {
       if (!res.ok) throw new Error('Failed to fetch products');
 
       const data = await res.json();
-      // payload ดิบจาก backend โครงสร้างไม่ตายตัว (หลาย endpoint/alias) — Record<string, any> เป็น escape hatch
-      const items: Array<Record<string, any>> = Array.isArray(data) ? data : data.items || [];
+      // payload ดิบจาก backend โครงสร้างไม่ตายตัว (หลาย endpoint/alias)
+      const items: RawProduct[] = Array.isArray(data) ? data : data.items || [];
 
       return items.map((p): ProductRow => {
-        const variant = p.variants && p.variants[0] ? p.variants[0] : {};
+        const variant: RawVariant = p.variants && p.variants[0] ? p.variants[0] : {};
         return {
-          id: p.product_template_id || p.id,
-          title: p.product_name,
+          id: p.product_template_id || p.id || '',
+          title: p.product_name || '',
           sku: variant.sku || '-',
           price: Number(variant.unit_price || 0),
           stock: Number(variant.stock_quantity || 0),
@@ -445,11 +477,11 @@ function ProductManagementPage() {
 
   const openModal = (mode: 'view' | 'edit' | 'create', product: ProductRow | null = null) => {
     if ((mode === 'edit' || mode === 'view') && product) {
-      // raw/rawVariant เป็นข้อมูลดิบจาก backend โครงสร้างไม่ตายตัว — ใช้ any เฉพาะ scope นี้
-      const p = product.raw as any;
-      const v = (product.rawVariant || {}) as any;
+      // raw/rawVariant เป็นข้อมูลดิบจาก backend โครงสร้างไม่ตายตัว
+      const p = product.raw as RawProduct;
+      const v = (product.rawVariant || {}) as RawVariant;
       setCreateForm({
-        product_name: p.product_name,
+        product_name: p.product_name || '',
         slug: p.slug || '',
         description: p.description || '',
         category_id: p.category_id || '',

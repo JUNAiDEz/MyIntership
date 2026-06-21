@@ -2,9 +2,7 @@ import { useEffect, useRef } from 'react';
 
 declare global {
   interface Window {
-    // โปรเจคยังไม่ได้ติดตั้ง @types/google.maps → คง any สำหรับ Google Maps JS API namespace
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    google?: any;
+    google?: typeof google;
   }
 }
 
@@ -56,11 +54,8 @@ export default function ShopMap({
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
   useEffect(() => {
-    // google.maps.Map / google.maps.Marker — ไม่มี type จาก lib (ยังไม่ติดตั้ง @types/google.maps)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let map: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let marker: any;
+    let map: google.maps.Map | null = null;
+    let marker: google.maps.Marker | null = null;
 
     if (!apiKey) return; // no API key -> fallback to iframe
 

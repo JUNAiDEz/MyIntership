@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="google.maps" />
 
 interface ImportMetaEnv {
   /** Base URL of the backend API (e.g. https://api.gt7motor.com). Empty string = same origin. */

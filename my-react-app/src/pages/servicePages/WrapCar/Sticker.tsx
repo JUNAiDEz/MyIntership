@@ -16,6 +16,22 @@ import ReviewGallery from '../../../components/ServicePage/ReviewGallery';
 import ServiceModal from '../../../components/ServicePage/ServiceModal';
 import CarColorChanger from '../../../components/ServicePage/CarColorChanger';
 
+// ข้อมูลรถ/สี จาก /api/stickers/* — base_*/paint_* เป็น column รูปแบบ dynamic
+interface StickerCar {
+  id?: number;
+  name?: string;
+  base_image?: string;
+  [key: string]: unknown;
+}
+interface StickerColor {
+  id: number;
+  name: string;
+  color_id: string | number;
+  color_code: string;
+  css_filter: string;
+  display_order: number;
+}
+
 const STICKER_AREA_OPTIONS = [
   { name: 'รูปหลัก / กระจก', id: 'full' }, 
   { name: 'ประตูรถ', id: 'door' },
@@ -47,8 +63,8 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
     },
   });
 
-  const [cars, setCars] = useState<any[]>([]);
-  const [colors, setColors] = useState<any[]>([]);
+  const [cars, setCars] = useState<StickerCar[]>([]);
+  const [colors, setColors] = useState<StickerColor[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0); 
   const [selectedColorId, setSelectedColorId] = useState<string | number>('original');
@@ -180,7 +196,7 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
               handleNext,
               cars,
               activeIndex,
-            } as any)}
+            } as unknown as ComponentProps<typeof CarColorChanger>)}
             />
         </section>
 
