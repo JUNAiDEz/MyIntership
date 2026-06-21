@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, type ComponentProps } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import styles from '../../../components/ServicePage/ServicePageLayout.module.css';
 import { useNavigate } from 'react-router-dom';
 import api, { API_URL } from '../../../utils/api';
+import type { ServicePricingGroup, ServiceModel, ReviewItem } from '@/types';
 
 import Header from '../../../components/Layout/Header';
 import Footer from '../../../components/Layout/Footer';
@@ -24,7 +25,7 @@ const STICKER_AREA_OPTIONS = [
   { name: 'หลังคา', id: 'roof' },
 ];
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1619405399517-d7fce0f13302?q=80&w=1000&auto=format&fit=crop', title: 'Before & After ติดสติ๊กเกอร์', desc: 'ผลงานเปลี่ยนสีรถ' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1632823470937-f1e87c487244?q=80&w=1000&auto=format&fit=crop', title: 'Wrap เปลี่ยนสีรอบคัน', desc: 'สีสดใส ทนทาน' },
   { type: 'video', videoId: 'dQw4w9WgXcQ', title: 'ขั้นตอนการติดสติ๊กเกอร์', desc: 'รีวิวขั้นตอนการทำงาน' }
@@ -41,7 +42,7 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
   const { data: dbData = [], isLoading: loadingPricing, isError: errorPricing } = useQuery({
     queryKey: ['service-pricing', 'sticker'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/sticker/pricing');
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/sticker/pricing');
       return Array.isArray(res) ? res : [];
     },
   });
@@ -53,7 +54,7 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
   const [selectedColorId, setSelectedColorId] = useState<string | number>('original');
   const [selectedArea, setSelectedArea] = useState('full');
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   useEffect(() => {
     const fetchStickerData = async () => {
@@ -113,9 +114,9 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
 
   const pricingData = useMemo(() => {
     if (!dbData || dbData.length === 0) return [];
-    return dbData.map((brandGroup: any) => ({
+    return dbData.map((brandGroup: ServicePricingGroup) => ({
       brand: brandGroup.brand,
-      models: (brandGroup.models || []).map((model: any) => ({
+      models: (brandGroup.models || []).map((model: ServiceModel) => ({
         ...model,
         price: [
           model.mirror && `กระจกมองข้าง: ${model.mirror}`,
@@ -144,8 +145,8 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
     return currentCar[key] || currentCar[`${type}_image`];
   };
 
-  const allServicePackages = pricingData.flatMap((brandGroup: any) => 
-    brandGroup.models.map((model: any) => ({ ...model, brand: brandGroup.brand }))
+  const allServicePackages = pricingData.flatMap((brandGroup: ServicePricingGroup) =>
+    brandGroup.models.map((model: ServiceModel) => ({ ...model, brand: brandGroup.brand }))
   );
 
   if (loading || loadingPricing) return <div className={styles.pipeCleanPage}><Header onLogout={onLogout} /><main className={styles.mainContent}><div style={{ textAlign: 'center', padding: '100px 20px', color: '#ffc709' }}><h2>กำลังโหลดข้อมูล...</h2></div></main><Footer /></div>;
@@ -161,7 +162,7 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
       <main className={styles.mainContent}>
         <HeroSection bgImage={heroImage} title="STICKER CAR WRAP" subtitle="เปลี่ยนลุครถของคุณด้วยสติ๊กเกอร์เกรดพรีเมียม" />
         
-        <PriceSelector pricingData={pricingData} />
+        <PriceSelector pricingData={pricingData as ComponentProps<typeof PriceSelector>['pricingData']} />
 
         <section>
             <CarColorChanger
@@ -187,7 +188,7 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
           <div className="container">
             <h3 className={styles.relatedTitle}>OTHER SERVICES</h3>
             <div className={styles.heroThumbnails}>
-              {[{ label: 'FLUID CHANGE', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/fluid-change' }, { label: 'ENGINE SPA', sub: 'สปาเครื่องยนต์', path: '/services/engine-spa' }, { label: 'PIPE CLEAN', sub: 'ล้างท่อร่วมไอดี', path: '/services/pipe-cleaning' }].map((item: any, i: number) => (
+              {[{ label: 'FLUID CHANGE', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/fluid-change' }, { label: 'ENGINE SPA', sub: 'สปาเครื่องยนต์', path: '/services/engine-spa' }, { label: 'PIPE CLEAN', sub: 'ล้างท่อร่วมไอดี', path: '/services/pipe-cleaning' }].map((item, i: number) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}><h3>{item.label}</h3><p>{item.sub}</p></div>
                 </div>
@@ -196,7 +197,7 @@ function Sticker({ onLogout }: { onLogout?: () => void }) {
           </div>
         </section>
 
-        <ServiceCatalog allPackages={allServicePackages} onOpenModal={(item: any) => { setModalData(item); setShowModal(true); }} />
+        <ServiceCatalog allPackages={allServicePackages as ComponentProps<typeof ServiceCatalog>['allPackages']} onOpenModal={((item: ServiceModel) => { setModalData(item); setShowModal(true); }) as ComponentProps<typeof ServiceCatalog>['onOpenModal']} />
         <ReviewGallery reviewItems={reviewItems} />
 
         <section className={`${styles.mapSection} container`}>

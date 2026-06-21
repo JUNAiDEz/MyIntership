@@ -14,10 +14,11 @@ import ReviewGallery from '../../../components/ServicePage/ReviewGallery';
 import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
 import api from '../../../utils/api';
+import type { ServicePricingGroup, ServiceModel, ReviewItem } from '@/types';
 
 // pricingData จะถูกดึงจาก API
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=1000&auto=format&fit=crop', title: 'ตั้งศูนย์ล้อ 3D', desc: 'แม่นยำด้วยเครื่องมือตั้งศูนย์ระบบ 3 มิติ มาตรฐานศูนย์บริการ' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1000&auto=format&fit=crop', title: 'เช็คช่วงล่างฟรี', desc: 'ตรวจเช็คลูกหมาก บูชปีกนก และระบบบังคับเลี้ยว' },
   { type: 'video', videoId: 'dQw4w9WgXcQ', title: 'ขั้นตอนการตั้งศูนย์', desc: 'ชมขั้นตอนการปรับตั้งมุมล้อ Camber, Caster, Toe' }
@@ -27,12 +28,12 @@ function Alignment({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   const { data: dbData = [], isLoading: loadingPricing, isError: errorPricing } = useQuery({
     queryKey: ['service-pricing', 'alignment'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/alignment/pricing');
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/alignment/pricing');
       return Array.isArray(res) ? res : [];
     },
   });
@@ -114,7 +115,7 @@ function Alignment({ onLogout }: { onLogout?: () => void }) {
                 { label: 'Shock Absorber', sub: 'เปลี่ยนโช๊คอัพ', path: '/services/fitment/shock-absorber' },
                 { label: 'Suspension', sub: 'โหลดเตี้ย/ยกสูง', path: '/services/fitment/suspension' },
                 { label: 'Wheels & Tires', sub: 'เปลี่ยนยาง/ล้อแม็ก', path: '/services/fitment/wheels-tires' },
-              ].map((item: any, i: number) => (
+              ].map((item, i) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>

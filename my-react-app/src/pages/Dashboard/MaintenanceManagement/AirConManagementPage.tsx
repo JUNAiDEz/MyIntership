@@ -5,18 +5,34 @@ import api from '../../../utils/api';
 // [CHANGE] ใช้ไฟล์ Theme กลาง
 import styles from '../../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaSave, FaWrench, FaBoxOpen, FaCar, FaTags } from 'react-icons/fa';
+import type { AdminBrand, AdminCarModel, PricingRow, FormFieldEvent } from '@/types';
+
+interface PricingForm {
+  id: number | null | undefined;
+  brand_id: string | number;
+  car_model_id: string | number | undefined;
+  price: string | number | undefined;
+  note: string | undefined;
+  img: string | undefined;
+}
+
+// รูปร่างข้อมูล group ที่ API คืนมา (ก่อน flatten)
+interface PricingGroup {
+  brand?: string;
+  models?: PricingRow[];
+}
 
 export default function AirConManagementPage() {
   // --- State ---
   const queryClient = useQueryClient();
-  const [brands, setBrands] = useState<any[]>([]);
-  const [models, setModels] = useState<any[]>([]);
+  const [brands, setBrands] = useState<AdminBrand[]>([]);
+  const [models, setModels] = useState<AdminCarModel[]>([]);
 
   // UI State
   const [search, setSearch] = useState('');
-  const [modal, setModal] = useState<any>({ open: false, mode: 'create' });
+  const [modal, setModal] = useState<{ open: boolean; mode: 'create' | 'edit' }>({ open: false, mode: 'create' });
 
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<PricingForm>({
     id: null,
     brand_id: '',
     car_model_id: '',
@@ -29,11 +45,11 @@ export default function AirConManagementPage() {
   const { data: items = [], isLoading: loading } = useQuery({
     queryKey: ['aircon-pricing-admin'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/aircon/pricing');
-      const flat: any[] = [];
+      const res = await api.apiGet<PricingGroup[]>('/api/services/aircon/pricing');
+      const flat: PricingRow[] = [];
       if (Array.isArray(res)) {
-        res.forEach((group: any) => {
-          (group.models || []).forEach((model: any) => {
+        res.forEach((group: PricingGroup) => {
+          (group.models || []).forEach((model: PricingRow) => {
             flat.push({
               brand: group.brand,
               name: model.name,
@@ -56,7 +72,7 @@ export default function AirConManagementPage() {
   useEffect(() => {
     // Fetch Brands
     const fetchBrands = async () => {
-      const res: any = await api.apiGet('/api/vehicles/master/brands');
+      const res = await api.apiGet<{ data: AdminBrand[] }>('/api/vehicles/master/brands');
       setBrands(res.data || []);
     };
     fetchBrands();
@@ -66,7 +82,7 @@ export default function AirConManagementPage() {
   useEffect(() => {
     if (formData.brand_id) {
       const fetchModels = async () => {
-        const res: any = await api.apiGet(`/api/vehicles/master/models?brand_id=${formData.brand_id}`);
+        const res = await api.apiGet<{ data: AdminCarModel[] }>(`/api/vehicles/master/models?brand_id=${formData.brand_id}`);
         setModels(res.data || []);
       };
       fetchModels();
@@ -78,7 +94,7 @@ export default function AirConManagementPage() {
   // --- Mutations ---
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const serviceRes: any = await api.apiGet('/api/services?search=Air-Con Cleaning');
+      const serviceRes = await api.apiGet<Array<{ service_id: number }>>('/api/services?search=Air-Con Cleaning');
       const service = (serviceRes && serviceRes.length > 0) ? serviceRes[0] : null;
       if (!service) {
         throw new Error('ไม่พบบริการ Air-Con Cleaning ในระบบ');
@@ -96,15 +112,15 @@ export default function AirConManagementPage() {
       closeModal();
       refresh();
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error('Error saving data:', err);
-      alert(err?.message || 'เกิดข้อผิดพลาด');
+      alert((err instanceof Error ? err.message : null) || 'เกิดข้อผิดพลาด');
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (car_model_id: any) => {
-      const serviceRes: any = await api.apiGet('/api/services?search=Air-Con Cleaning');
+    mutationFn: async (car_model_id: number | undefined) => {
+      const serviceRes = await api.apiGet<Array<{ service_id: number }>>('/api/services?search=Air-Con Cleaning');
       const service = (serviceRes && serviceRes.length > 0) ? serviceRes[0] : null;
       if (!service) return;
       return api.apiPatch('/api/services/pricing', {
@@ -114,18 +130,18 @@ export default function AirConManagementPage() {
       }, { auth: true });
     },
     onSuccess: refresh,
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error('Error deleting:', err);
     },
   });
 
   // --- Handlers ---
-  const handleChange = (e: any) => {
+  const handleChange = (e: FormFieldEvent) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev: PricingForm) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.car_model_id || !formData.price) {
       alert('กรุณาเลือกยี่ห้อ/รุ่นรถ และกรอกราคา');
@@ -134,8 +150,8 @@ export default function AirConManagementPage() {
     saveMutation.mutate();
   };
 
-  const handleEdit = (item: any) => {
-    const brandObj = brands.find((b: any) => b.brand_name === item.brand);
+  const handleEdit = (item: PricingRow) => {
+    const brandObj = brands.find((b: AdminBrand) => b.brand_name === item.brand);
     setFormData({
       id: item.id,
       brand_id: brandObj ? brandObj.brand_id : '',
@@ -147,7 +163,7 @@ export default function AirConManagementPage() {
     setModal({ open: true, mode: 'edit' });
   };
 
-  const handleDelete = (car_model_id: any) => {
+  const handleDelete = (car_model_id: number | undefined) => {
     if (window.confirm('คุณแน่ใจหรือไม่ว่าจะลบรายการนี้?')) {
       deleteMutation.mutate(car_model_id);
     }
@@ -164,13 +180,13 @@ export default function AirConManagementPage() {
   };
 
   // --- Filtering ---
-  const filteredItems = items.filter((item: any) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.brand.toLowerCase().includes(search.toLowerCase())
+  const filteredItems = items.filter((item: PricingRow) =>
+    item.name!.toLowerCase().includes(search.toLowerCase()) ||
+    item.brand!.toLowerCase().includes(search.toLowerCase())
   );
 
   // Helper for Tabs Style
-  const tabStyle = (path: any): React.CSSProperties => {
+  const tabStyle = (path: string): React.CSSProperties => {
     const isActive = window.location.pathname.includes(path);
     return {
       padding: '10px 15px',
@@ -239,7 +255,7 @@ export default function AirConManagementPage() {
                           {filteredItems.length === 0 && (
                               <tr><td colSpan={5} style={{ textAlign: 'center', padding: '30px' }}>No data found.</td></tr>
                           )}
-                          {filteredItems.map((item: any, idx: number) => (
+                          {filteredItems.map((item: PricingRow, idx: number) => (
                               <tr key={idx}>
                                   <td>{item.brand}</td>
                                   <td>{item.name}</td>
@@ -283,7 +299,7 @@ export default function AirConManagementPage() {
                               required
                           >
                               <option value="">-- Select Brand --</option>
-                              {brands.map((b: any) => <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>)}
+                              {brands.map((b: AdminBrand) => <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>)}
                           </select>
                       </div>
 
@@ -298,7 +314,7 @@ export default function AirConManagementPage() {
                               disabled={!formData.brand_id}
                           >
                               <option value="">-- Select Model --</option>
-                              {models.map((m: any) => <option key={m.car_model_id} value={m.car_model_id}>{m.model_name}</option>)}
+                              {models.map((m: AdminCarModel) => <option key={m.car_model_id} value={m.car_model_id}>{m.model_name}</option>)}
                           </select>
                       </div>
 

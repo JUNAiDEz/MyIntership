@@ -19,10 +19,12 @@ import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
 import api from '../../../utils/api';
 
+import type { ServicePricingGroup, ServiceModel, ReviewItem } from '@/types';
+
 // ================== DATA: Valve Service ==================
 // pricingData จะถูกดึงจาก API
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?q=80&w=1000&auto=format&fit=crop', title: 'ตั้งวาล์ว', desc: 'ตัวอย่างงานตั้งวาล์วเครื่องยนต์ เพื่อคืนกำลังอัดให้เครื่องยนต์' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1549924231-f129b911e442?q=80&w=1000&auto=format&fit=crop', title: 'เจียร์บ่าวาล์ว', desc: 'ซ่อมบ่าวาล์วรั่ว แก้ปัญหาเครื่องยนต์เดินไม่เรียบ' },
   { type: 'video', videoId: 'QwZT7T-TXT0', title: 'รีวิวการแก้วาล์ว', desc: 'ขั้นตอนการแก้ไขวาล์วและบ่าวาล์วอย่างละเอียด' }
@@ -41,12 +43,12 @@ function ValveService({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   const { data: dbData = [], isLoading: loadingPricing, isError: errorPricing } = useQuery({
     queryKey: ['service-pricing', 'valve-service'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/valve-service/pricing');
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/valve-service/pricing');
       return Array.isArray(res) ? res : [];
     },
   });
@@ -54,15 +56,15 @@ function ValveService({ onLogout }: { onLogout?: () => void }) {
   // แปลงข้อมูลให้เหมาะกับ UI เดิม
   const pricingData = useMemo(() => {
     if (!Array.isArray(dbData) || dbData.length === 0) return [];
-    return dbData.map((brandGroup: any) => ({
+    return dbData.map((brandGroup: ServicePricingGroup) => ({
       brand: brandGroup.brand,
-      models: (brandGroup.models || []).map((model: any) => ({ ...model }))
+      models: (brandGroup.models || []).map((model: ServiceModel) => ({ ...model }))
     }));
   }, [dbData]);
 
   const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) =>
-      brandGroup.models.map((model: any) => ({
+    return pricingData.flatMap((brandGroup: ServicePricingGroup) =>
+      brandGroup.models.map((model: ServiceModel) => ({
         ...model,
         brand: brandGroup.brand,
         image_url: model.image_url || model.img || ''
@@ -72,9 +74,9 @@ function ValveService({ onLogout }: { onLogout?: () => void }) {
   if (loadingPricing) return <div className={styles.pageContainer}><Header onLogout={onLogout} /><main className={styles.mainContent}><div style={{ textAlign: 'center', padding: '100px 20px', color: '#ffc709' }}><h2>กำลังโหลดข้อมูล...</h2></div></main><Footer /></div>;
   if (errorPricing) return <div className={styles.pageContainer}><Header onLogout={onLogout} /><main className={styles.mainContent}><div style={{ textAlign: 'center', padding: '100px 20px', color: 'red' }}><h2>ไม่สามารถโหลดข้อมูลราคาได้</h2></div></main><Footer /></div>;
 
-  const handleOpenPopup = (item: any) => { 
-    setModalData(item); 
-    setShowModal(true); 
+  const handleOpenPopup = (item: ServiceModel) => {
+    setModalData(item);
+    setShowModal(true);
   };
 
   const heroImage = 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?q=80&w=1600&auto=format&fit=crop';
@@ -84,8 +86,8 @@ function ValveService({ onLogout }: { onLogout?: () => void }) {
   const mainImage = heroImage;
 
   // Logic หา Low Price สำหรับ SEO
-  const prices = allServicePackages.map((p: any) => { 
-    const digits = String(p.price || '').replace(/[^0-9]/g, ''); 
+  const prices = allServicePackages.map((p: ServiceModel) => {
+    const digits = String(p.price || '').replace(/[^0-9]/g, '');
     return digits ? Number(digits) : null; 
   }).filter((n: number | null): n is number => n !== null);
   const lowPrice = prices.length ? Math.min(...prices) : null;
@@ -116,7 +118,7 @@ function ValveService({ onLogout }: { onLogout?: () => void }) {
   const faqLd = {
     '@context': 'https://schema.org', 
     '@type': 'FAQPage',
-    'mainEntity': faqItems.map((f: any) => ({ '@type': 'Question', 'name': f.question, 'acceptedAnswer': { '@type': 'Answer', 'text': f.answer } }))
+    'mainEntity': faqItems.map((f) => ({ '@type': 'Question', 'name': f.question, 'acceptedAnswer': { '@type': 'Answer', 'text': f.answer } }))
   };
 
   const jsonLdArray = [serviceLd, localBusinessLd, faqLd];
@@ -145,7 +147,7 @@ function ValveService({ onLogout }: { onLogout?: () => void }) {
         />
 
         {/* 2. Price Selector */}
-        <PriceSelector pricingData={pricingData} />
+        <PriceSelector pricingData={pricingData as React.ComponentProps<typeof PriceSelector>['pricingData']} />
 
         {/* 3. Related Services */}
         <section className={styles.relatedServices}>
@@ -156,7 +158,7 @@ function ValveService({ onLogout }: { onLogout?: () => void }) {
                 { label: 'FLUID CHANGE', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/fluid-change' },
                 { label: 'ENGINE SPA', sub: 'สปาเครื่องยนต์', path: '/services/engine-spa' },
                 { label: 'PIPE CLEAN', sub: 'ล้างท่อร่วมไอดี', path: '/services/pipe-cleaning' },
-              ].map((item: any, i: number) => (
+              ].map((item, i) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>
@@ -169,9 +171,9 @@ function ValveService({ onLogout }: { onLogout?: () => void }) {
         </section>
 
         {/* 4. Service Catalog */}
-        <ServiceCatalog 
-          allPackages={allServicePackages} 
-          onOpenModal={handleOpenPopup} 
+        <ServiceCatalog
+          allPackages={allServicePackages}
+          onOpenModal={handleOpenPopup as React.ComponentProps<typeof ServiceCatalog>['onOpenModal']}
         />
 
         {/* 5. Review Gallery */}

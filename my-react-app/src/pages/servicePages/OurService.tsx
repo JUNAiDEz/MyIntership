@@ -188,8 +188,8 @@ function OurService({ onLogout }: { onLogout?: () => void }) {
     image: 'https://front.gt7dev.com/og-image-services.jpg'
   };
 
-  const heroBanner = serviceBannersData.find((b: any) => b.id === 'gt7');
-  const serviceList = serviceBannersData.filter((b: any) => b.id !== 'gt7');
+  const heroBanner = serviceBannersData.find((b) => b.id === 'gt7');
+  const serviceList = serviceBannersData.filter((b) => b.id !== 'gt7');
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-bg-main text-text-main transition-colors duration-300">
@@ -218,7 +218,7 @@ function OurService({ onLogout }: { onLogout?: () => void }) {
         )}
 
         {/* 2. Loop Service Sections */}
-        {serviceList.map((service: any) => {
+        {serviceList.map((service) => {
           const isAlignRight = service.align === 'right';
 
           return (
@@ -243,7 +243,7 @@ function OurService({ onLogout }: { onLogout?: () => void }) {
 
                 {/* Grid ปุ่มบริการ (Cinematic Card) */}
                 <div className="mt-[30px] grid grid-cols-2 gap-2.5 md:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] md:gap-5">
-                  {service.buttons && service.buttons.map((btn: any, btnIndex: number) => (
+                  {service.buttons && service.buttons.map((btn, btnIndex) => (
                     <Link
                       to={btn.link}
                       key={btnIndex}

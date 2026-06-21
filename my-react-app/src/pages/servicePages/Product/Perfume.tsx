@@ -13,6 +13,8 @@ import ServiceCatalog from '../../../components/ServicePage/ServiceCatalog';
 import ReviewGallery from '../../../components/ServicePage/ReviewGallery';
 import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
+import type { ServiceModel, ReviewItem } from '@/types';
+
 // ================== DATA: CAR PERFUME ==================
 const pricingData = [
   {
@@ -40,7 +42,7 @@ const pricingData = [
   }
 ];
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1000&auto=format&fit=crop', title: 'STEP 1 Treatment', desc: 'ทำความสะอาดเครื่องยนต์ภายใน' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1625047509168-a7026f36de04', title: 'Engine Protection', desc: 'ป้องกันการสึกหรอ' },
   { type: 'video', videoId: 'dQw4w9WgXcQ', title: 'ขั้นตอนการใช้ STEP 1', desc: 'วิธีการใช้งาน' }
@@ -50,13 +52,14 @@ function Perfume({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   // Flatten all models for ServiceCatalog
-  const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) => brandGroup.models.map((model: any) => ({ ...model, brand: brandGroup.brand })));
+  const allServicePackages = useMemo<ServiceModel[]>(() => {
+    return pricingData.flatMap((brandGroup) => brandGroup.models.map((model) => ({ ...model, brand: brandGroup.brand })));
   }, []);
 
+  // param คง any: ServiceCatalog ส่ง PackageItem (ไม่มี index signature) ทำให้ใส่ ServiceModel แล้ว prop callback ไม่ assignable
   const handleOpenPopup = (item: any) => { setModalData(item); setShowModal(true); };
 
   const heroImage = 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1600&auto=format&fit=crop';
@@ -66,7 +69,7 @@ function Perfume({ onLogout }: { onLogout?: () => void }) {
   const mainImage = heroImage;
 
   // For SEO price range
-  const prices = allServicePackages.map((p: any) => {
+  const prices = allServicePackages.map((p) => {
     const digits = String(p.price || '').replace(/[^0-9]/g, '');
     return digits ? Number(digits) : null;
   }).filter((n: number | null): n is number => n !== null);
@@ -113,7 +116,7 @@ function Perfume({ onLogout }: { onLogout?: () => void }) {
                 { label: 'GT7', sub: 'Premium Products', path: '/services/product/gt7' },
                 { label: 'Nano Coating', sub: 'Paint Protection', path: '/services/product/nano' },
                 { label: 'M-MAX', sub: 'Engine Care', path: '/services/product/mmax' },
-              ].map((item: any, i: number) => (
+              ].map((item, i) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>

@@ -7,7 +7,8 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
 // 👇 Import API Utility
-import api from '../../../utils/api'; 
+import api from '../../../utils/api';
+import type { ServicePricingGroup, ServiceModel, ReviewItem } from '@/types';
 
 // Layout
 import Header from '../../../components/Layout/Header';
@@ -24,7 +25,7 @@ import ServiceModal from '../../../components/ServicePage/ServiceModal';
 // ==================================================================================
 // STATIC DATA (Reviews ยังใช้แบบเดิมไปก่อน)
 // ==================================================================================
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   {
     type: 'image',
     src: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=1000&auto=format&fit=crop',
@@ -53,7 +54,7 @@ function PipeCleanTest({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   // -----------------------------------------------------
   // 1. ส่วนของการดึงข้อมูล (Data Fetching)
@@ -62,12 +63,12 @@ function PipeCleanTest({ onLogout }: { onLogout?: () => void }) {
     queryKey: ['service-pricing', 'pipe-clean'],
     queryFn: async () => {
       // ดึงข้อมูลราคาบริการ Pipe Clean จาก backend จริง
-      const res: any = await api.apiGet('/api/services/pipe-clean/pricing');
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/pipe-clean/pricing');
       // res = [ { brand, models: [ { ...model, price, note, ... } ] }, ... ]
       // flatten ให้เป็น array เดียว (เหมือนฝั่ง admin)
-      const flat: any[] = [];
-      (res || []).forEach((group: any) => {
-        (group.models || []).forEach((model: any) => {
+      const flat: ServiceModel[] = [];
+      (res || []).forEach((group: ServicePricingGroup) => {
+        (group.models || []).forEach((model: ServiceModel) => {
           flat.push({
             brand: group.brand,
             ...model
@@ -87,24 +88,24 @@ function PipeCleanTest({ onLogout }: { onLogout?: () => void }) {
     if (!dbData || dbData.length === 0) return [];
 
     // ดึงรายชื่อ Brand ทั้งหมดแบบไม่ซ้ำ
-    const brands = [...new Set(dbData.map((item: any) => item.brand))];
-    
+    const brands = [...new Set(dbData.map((item: ServiceModel) => item.brand))];
+
     // จัดกลุ่ม
     return brands.map(brand => ({
       brand: brand,
-      models: dbData.filter((item: any) => item.brand === brand)
+      models: dbData.filter((item: ServiceModel) => item.brand === brand)
     }));
   }, [dbData]);
 
   // Flatten Data สำหรับ ServiceCatalog (ใช้ Logic เดียวกับ allServicePackages เดิม แต่เปลี่ยน Source)
   const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) => 
-      brandGroup.models.map((model: any) => ({ ...model, brand: brandGroup.brand }))
+    return pricingData.flatMap((brandGroup) =>
+      brandGroup.models.map((model: ServiceModel) => ({ ...model, brand: brandGroup.brand }))
     );
   }, [pricingData]);
 
   // Handle Modal
-  const handleOpenPopup = (item: any) => {
+  const handleOpenPopup = (item: ServiceModel) => {
     setModalData(item);
     setShowModal(true);
   };
@@ -121,7 +122,7 @@ function PipeCleanTest({ onLogout }: { onLogout?: () => void }) {
   const mainImage = heroImage;
 
   // Logic หา Low Price จากข้อมูล Dynamic
-  const prices = allServicePackages.map((p: any) => {
+  const prices = allServicePackages.map((p: ServiceModel) => {
     const digits = String(p.price || '').replace(/[^0-9]/g, '');
     return digits ? parseInt(digits.substring(0, 4)) : null;
   }).filter((n: number | null): n is number => n !== null);
@@ -193,7 +194,7 @@ function PipeCleanTest({ onLogout }: { onLogout?: () => void }) {
 
         {/* 2. Price Selector (รับข้อมูล Dynamic) */}
         {pricingData.length > 0 ? (
-            <PriceSelector pricingData={pricingData} />
+            <PriceSelector pricingData={pricingData as React.ComponentProps<typeof PriceSelector>['pricingData']} />
         ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: '#fff' }}>
                 ยังไม่มีข้อมูลราคาในระบบ
@@ -209,7 +210,7 @@ function PipeCleanTest({ onLogout }: { onLogout?: () => void }) {
                 { label: 'FLUID CHANGE', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/maintenance/fluid-change' },
                 { label: 'ENGINE SPA', sub: 'สปาเครื่องยนต์', path: '/services/maintenance/engine-spa' },
                 { label: 'REMAP TUNING', sub: 'รีแมพ เพิ่มแรงม้า', path: '/services/upgrade/remap' },
-              ].map((item: any, i: number) => (
+              ].map((item, i: number) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>
@@ -222,7 +223,7 @@ function PipeCleanTest({ onLogout }: { onLogout?: () => void }) {
         </section>
 
         {/* 4. Catalog */}
-        <ServiceCatalog allPackages={allServicePackages} onOpenModal={handleOpenPopup} />
+        <ServiceCatalog allPackages={allServicePackages} onOpenModal={handleOpenPopup as React.ComponentProps<typeof ServiceCatalog>['onOpenModal']} />
 
         {/* 5. Reviews */}
         <ReviewGallery reviewItems={reviewItems} />

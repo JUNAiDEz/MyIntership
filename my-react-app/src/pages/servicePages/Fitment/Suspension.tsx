@@ -13,11 +13,12 @@ import ReviewGallery from '../../../components/ServicePage/ReviewGallery';
 import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
 import api from '../../../utils/api';
+import type { ServicePricingGroup, ServiceModel, ReviewItem } from '@/types';
 
 // pricingData will be fetched from API
 
 // ข้อมูลรีวิว
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
     {
       type: 'image',
       src: 'https://images.unsplash.com/photo-1606577924006-27d39b132ae2?q=80&w=1000&auto=format&fit=crop',
@@ -42,12 +43,12 @@ function Suspension({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   const { data: dbData = [], isLoading: loadingPricing, isError: errorPricing } = useQuery({
     queryKey: ['service-pricing', 'suspension'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/suspension/pricing');
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/suspension/pricing');
       return Array.isArray(res) ? res : [];
     },
   });
@@ -129,7 +130,7 @@ function Suspension({ onLogout }: { onLogout?: () => void }) {
                 { label: 'Ball Joints', sub: 'ลูกหมากปีกนก', path: '/services/fitment/ball-joints' },
                 { label: 'Shock Absorber', sub: 'เปลี่ยนโช๊คอัพ', path: '/services/fitment/shock-absorber' },
                 { label: 'Wheels & Tires', sub: 'เปลี่ยนยาง/ล้อแม็ก', path: '/services/fitment/wheels-tires' },
-              ].map((item: any, i: number) => (
+              ].map((item, i) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>

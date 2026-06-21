@@ -16,6 +16,8 @@ import ServiceCatalog from '../../../components/ServicePage/ServiceCatalog';
 import ReviewGallery from '../../../components/ServicePage/ReviewGallery';
 import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
+import type { ServiceModel, ReviewItem } from '@/types';
+
 // ================== DATA: GT7 ==================
 const pricingData = [
   {
@@ -51,7 +53,7 @@ const pricingData = [
   }
 ];
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1622186477895-f2af6a0f5a97?q=80&w=1000&auto=format&fit=crop', title: 'GT7 Spray ใช้งานได้จริง', desc: 'แก้ปัญหาสนิมเกาะน็อตล้อ ขันออกง่ายขึ้นทันที' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=1000&auto=format&fit=crop', title: 'ล้างเบรคสะอาดหมดจด', desc: 'ขจัดคราบฝุ่นผ้าเบรคและน้ำมัน โดยไม่ทำลายลูกยาง' },
   { type: 'video', videoId: 'dQw4w9WgXcQ', title: 'สาธิตการใช้ Engine Flush', desc: 'วิธีการล้างภายในเครื่องยนต์ด้วย GT7 Engine Flush' }
@@ -68,12 +70,13 @@ function Gt7({ onLogout }: { onLogout?: () => void }) {
   const go = (path: string) => navigate(path);
   
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
-  const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) => brandGroup.models.map((model: any) => ({ ...model, brand: brandGroup.brand })));
+  const allServicePackages = useMemo<ServiceModel[]>(() => {
+    return pricingData.flatMap((brandGroup) => brandGroup.models.map((model) => ({ ...model, brand: brandGroup.brand })));
   }, []);
 
+  // param คง any: ServiceCatalog ส่ง PackageItem (ไม่มี index signature) ทำให้ใส่ ServiceModel แล้ว prop callback ไม่ assignable
   const handleOpenPopup = (item: any) => { setModalData(item); setShowModal(true); };
 
   const heroImage = 'https://images.unsplash.com/photo-1635773173748-0387b320d755?q=80&w=1600&auto=format&fit=crop';
@@ -82,9 +85,9 @@ function Gt7({ onLogout }: { onLogout?: () => void }) {
   const description = 'ผลิตภัณฑ์ดูแลรักษารถยนต์ GT7 Motor ทั้งน้ำมันหล่อลื่น สารทำความสะอาด และสารบำรุงเครื่องยนต์';
   const mainImage = heroImage;
   
-  const prices = allServicePackages.map((p: any) => { 
-    const digits = String(p.price || '').replace(/[^0-9]/g, ''); 
-    return digits ? Number(digits) : null; 
+  const prices = allServicePackages.map((p) => {
+    const digits = String(p.price || '').replace(/[^0-9]/g, '');
+    return digits ? Number(digits) : null;
   }).filter((n: number | null): n is number => n !== null);
   const lowPrice = prices.length ? Math.min(...prices) : null;
 
@@ -132,7 +135,7 @@ function Gt7({ onLogout }: { onLogout?: () => void }) {
                 { label: 'FLUID CHANGE', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/fluid-change' },
                 { label: 'ENGINE SPA', sub: 'สปาเครื่องยนต์', path: '/services/engine-spa' },
                 { label: 'REMAP', sub: 'จูนกล่อง ECU', path: '/services/remap' },
-              ].map((item: any, i: number) => (
+              ].map((item, i) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>

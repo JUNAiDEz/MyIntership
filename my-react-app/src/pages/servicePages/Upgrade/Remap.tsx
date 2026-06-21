@@ -6,13 +6,14 @@ import Header from '../../../components/Layout/Header';
 import Footer from '../../../components/Layout/Footer';
 import ShopMap from '../../../components/Map/ShopMap';
 import api from '../../../utils/api';
+import type { ServicePricingGroup, ServiceModel, ReviewItem } from '@/types';
 // ==================================================================================
 // Data for Remap service (ตัวอย่างข้อมูลราคาสำหรับหน้า Remap)
 // ==================================================================================
 
 // ================== DATA: Remap Pricing (Dynamic) ==================
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1549924231-f129b911e442?q=80&w=1000&auto=format&fit=crop', title: 'Before/After Dyno', desc: 'ผลทดสอบก่อนและหลังการรีแมพ' },
   { type: 'video', videoId: 'dQw4w9WgXcQ', title: 'Remap Process', desc: 'ตัวอย่างขั้นตอนการรีแมพ ECU' }
 ];
@@ -53,23 +54,23 @@ const HeroSection = ({ bgImage }: { bgImage: string }) => (
   </section>
 );
 
-const PriceSelector = ({ pricingData }: { pricingData: any[] }) => {
+const PriceSelector = ({ pricingData }: { pricingData: ServicePricingGroup[] }) => {
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
-  const [resultData, setResultData] = useState<any>(null);
+  const [resultData, setResultData] = useState<ServiceModel | null>(null);
 
-  const handleBrandChange = (e: any) => { setSelectedBrand(e.target.value); setSelectedModel(''); setResultData(null); };
-  const handleModelChange = (e: any) => {
+  const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => { setSelectedBrand(e.target.value); setSelectedModel(''); setResultData(null); };
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const modelName = e.target.value;
     setSelectedModel(modelName);
     if (selectedBrand && modelName) {
-      const brandData = pricingData.find((b: any) => b.brand === selectedBrand);
-      const modelData = brandData?.models.find((m: any) => m.name === modelName);
-      setResultData(modelData);
+      const brandData = pricingData.find((b: ServicePricingGroup) => b.brand === selectedBrand);
+      const modelData = brandData?.models.find((m: ServiceModel) => m.name === modelName);
+      setResultData(modelData ?? null);
     }
   };
 
-  const availableModels = selectedBrand ? pricingData.find((b: any) => b.brand === selectedBrand)?.models || [] : [];
+  const availableModels = selectedBrand ? pricingData.find((b: ServicePricingGroup) => b.brand === selectedBrand)?.models || [] : [];
 
   return (
     <section className="relative z-10 -mt-[100px] px-5 max-md:-mt-[60px]">
@@ -79,14 +80,14 @@ const PriceSelector = ({ pricingData }: { pricingData: any[] }) => {
             <label className="text-[#ffc709] text-[0.9rem] uppercase tracking-[1px] mb-2.5 block font-semibold">BRAND</label>
             <select className="w-full px-5 py-[15px] bg-black text-white border border-[#333] rounded-lg text-[1.1rem] cursor-pointer transition-all duration-300 outline-none focus:border-[#ffc709] focus:shadow-[0_0_15px_rgba(255,199,9,0.2)]" value={selectedBrand} onChange={handleBrandChange}>
               <option value="">เลือกยี่ห้อรถ...</option>
-              {pricingData.map((b: any, idx: number) => <option key={idx} value={b.brand}>{b.brand}</option>)}
+              {pricingData.map((b: ServicePricingGroup, idx: number) => <option key={idx} value={b.brand}>{b.brand}</option>)}
             </select>
           </div>
           <div>
             <label className="text-[#ffc709] text-[0.9rem] uppercase tracking-[1px] mb-2.5 block font-semibold">MODEL</label>
             <select className="w-full px-5 py-[15px] bg-black text-white border border-[#333] rounded-lg text-[1.1rem] cursor-pointer transition-all duration-300 outline-none focus:border-[#ffc709] focus:shadow-[0_0_15px_rgba(255,199,9,0.2)]" value={selectedModel} onChange={handleModelChange} disabled={!selectedBrand}>
               <option value="">เลือกรุ่น...</option>
-              {availableModels.map((m: any, idx: number) => <option key={idx} value={m.name}>{m.name}</option>)}
+              {availableModels.map((m: ServiceModel, idx: number) => <option key={idx} value={m.name}>{m.name}</option>)}
             </select>
           </div>
         </div>
@@ -96,7 +97,7 @@ const PriceSelector = ({ pricingData }: { pricingData: any[] }) => {
             <div className="bg-[#ffc709] text-black px-5 py-2.5 font-black uppercase">{selectedBrand} {resultData.name}</div>
             <div className="p-5">
               <div className="flex justify-between items-center border-b border-[#333] pb-[15px] mb-[15px]"><span>ค่าบริการรีแมพ</span><span className="text-[2rem] text-[#ffc709] font-bold [text-shadow:0_0_10px_rgba(255,199,9,0.4)]">{resultData.price}</span></div>
-              <div style={{color:'#888', fontSize:'0.9rem', lineHeight: '1.6'}}>Stage: <span style={{color:'#fff'}}>{resultData.stage}</span></div>
+              <div style={{color:'#888', fontSize:'0.9rem', lineHeight: '1.6'}}>Stage: <span style={{color:'#fff'}}>{resultData.stage as React.ReactNode}</span></div>
               {resultData.note && <div style={{marginTop: '15px', color: '#ffc709', fontSize:'0.8rem'}}>* {resultData.note}</div>}
             </div>
           </div>
@@ -106,7 +107,7 @@ const PriceSelector = ({ pricingData }: { pricingData: any[] }) => {
   );
 };
 
-const ServiceCatalog = ({ allPackages, onOpenModal }: { allPackages: any[]; onOpenModal: (item: any) => void }) => {
+const ServiceCatalog = ({ allPackages, onOpenModal }: { allPackages: ServiceModel[]; onOpenModal: (item: ServiceModel) => void }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -121,7 +122,7 @@ const ServiceCatalog = ({ allPackages, onOpenModal }: { allPackages: any[]; onOp
       <h2 className={catalogTitleCls}>PRICE LIST</h2>
       <div className="container">
         <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-[35px] gap-y-20 mb-[100px]">
-          {currentItems.map((item: any, idx: number) => {
+          {currentItems.map((item: ServiceModel, idx: number) => {
             const idList = ['1492144534655-ae79c964c9d7','1550355291-bbee04a92027','1503376780353-7e6692767b70'];
             const imgBase = `https://images.unsplash.com/photo-${idList[idx % idList.length]}`;
             const imgSmall = `${imgBase}?w=400&h=300&fit=crop&q=80`;
@@ -163,7 +164,7 @@ const ReviewGallery = () => (
       <div className="w-20 h-1 bg-[#ffc709] mx-auto rounded-sm"></div>
     </div>
     <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5 mt-10">
-      {reviewItems.map((item: any, idx: number) => (
+      {reviewItems.map((item, idx) => (
         <div key={idx} className="group bg-[#111] border border-[#333]">
           <div className="h-[220px] overflow-hidden">
             {item.type === 'video' ? (
@@ -179,17 +180,17 @@ const ReviewGallery = () => (
   </section>
 );
 
-const ServiceModal = ({ isOpen, data, onClose }: { isOpen: boolean; data: any; onClose: () => void }) => {
+const ServiceModal = ({ isOpen, data, onClose }: { isOpen: boolean; data: ServiceModel | null; onClose: () => void }) => {
   if (!isOpen || !data) return null;
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-black/80 flex items-center justify-center z-[9999] animate-fade-in" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-[600px] w-[90%] max-h-[90vh] overflow-y-auto relative animate-slide-up" onClick={(e: any) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl max-w-[600px] w-[90%] max-h-[90vh] overflow-y-auto relative animate-slide-up" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <span className="absolute top-5 right-5 text-[2rem] text-[#666] cursor-pointer leading-none transition-colors duration-200 z-[1] hover:text-black" onClick={onClose}>&times;</span>
         <div className="px-[30px] pt-[30px] pb-5 border-b-2 border-[#f0f0f0]"><span className="inline-block bg-[#ffc709] text-black px-4 py-1.5 rounded-[20px] text-[0.85rem] font-bold uppercase tracking-[1px] mb-[15px]">{data.brand}</span><h3 className="text-[1.8rem] font-extrabold text-black m-0">{data.name}</h3></div>
         <div className="p-[30px]">
           <div className="flex justify-between items-center mb-5"><label className="text-[1rem] text-[#666] font-semibold">ค่าบริการรีแมพ</label><span className="text-[2rem] text-[#d32f2f] font-extrabold">{data.price}</span></div>
           <div className="h-px bg-[#e0e0e0] my-[25px]"></div>
-          <div><h4 className="text-[1.2rem] text-black mt-0 mb-[15px] font-bold">รายละเอียด</h4><div className="flex justify-between items-center py-3 border-b border-dashed border-[#e0e0e0]"><span className="text-[#333]">Stage</span><span className="font-bold text-black text-[1.1rem]">{data.stage}</span></div></div>
+          <div><h4 className="text-[1.2rem] text-black mt-0 mb-[15px] font-bold">รายละเอียด</h4><div className="flex justify-between items-center py-3 border-b border-dashed border-[#e0e0e0]"><span className="text-[#333]">Stage</span><span className="font-bold text-black text-[1.1rem]">{data.stage as React.ReactNode}</span></div></div>
           {data.note && <div className="mt-5 p-[15px] bg-[#fff9e6] border-l-4 border-[#ffc709] rounded text-[0.9rem] text-[#666]"><strong className="text-black">หมายเหตุ:</strong> {data.note}</div>}
         </div>
         <div className="px-[30px] py-5 border-t-2 border-[#f0f0f0] flex justify-center"><button className="bg-[#333] text-white px-10 py-3 border-none rounded-[25px] font-bold text-[1rem] cursor-pointer transition-all duration-300 uppercase hover:bg-[#ffc709] hover:text-black hover:shadow-[0_5px_15px_rgba(255,199,9,0.4)]" onClick={onClose}>ปิดหน้าต่าง</button></div>
@@ -202,12 +203,12 @@ function Remap({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   const { data: dbData = [], isLoading: loadingPricing, isError: errorPricing } = useQuery({
     queryKey: ['service-pricing', 'remap'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/remap/pricing');
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/remap/pricing');
       return Array.isArray(res) ? res : [];
     },
   });
@@ -215,15 +216,15 @@ function Remap({ onLogout }: { onLogout?: () => void }) {
   // แปลงข้อมูลให้เหมาะกับ UI เดิม
   const pricingData = useMemo(() => {
     if (!dbData || dbData.length === 0) return [];
-    return dbData.map((brandGroup: any) => ({
+    return dbData.map((brandGroup: ServicePricingGroup) => ({
       brand: brandGroup.brand,
-      models: (brandGroup.models || []).map((model: any) => ({ ...model }))
+      models: (brandGroup.models || []).map((model: ServiceModel) => ({ ...model }))
     }));
   }, [dbData]);
 
   const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) =>
-      brandGroup.models.map((model: any) => ({
+    return pricingData.flatMap((brandGroup: ServicePricingGroup) =>
+      brandGroup.models.map((model: ServiceModel) => ({
         ...model,
         brand: brandGroup.brand,
         image_url: model.image_url || model.img || ''
@@ -231,7 +232,7 @@ function Remap({ onLogout }: { onLogout?: () => void }) {
     );
   }, [pricingData]);
 
-  const handleOpenPopup = (item: any) => { setModalData(item); setShowModal(true); };
+  const handleOpenPopup = (item: ServiceModel) => { setModalData(item); setShowModal(true); };
 
   const heroImage = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop';
 
@@ -240,7 +241,7 @@ function Remap({ onLogout }: { onLogout?: () => void }) {
   const description = 'ปรับจูนกล่อง ECU (Remap) เพื่อเพิ่มสมรรถนะ การตอบสนองของเครื่องยนต์ และประหยัดน้ำมัน ให้เหมาะกับการใช้งานจริง.';
   const mainImage = heroImage;
 
-  const prices = allServicePackages.map((p: any) => {
+  const prices = allServicePackages.map((p: ServiceModel) => {
     const digits = String(p.price || '').replace(/[^0-9]/g, '');
     return digits ? Number(digits) : null;
   }).filter((n: number | null): n is number => n !== null);
@@ -278,7 +279,7 @@ function Remap({ onLogout }: { onLogout?: () => void }) {
   const faqLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    'mainEntity': faqItems.map((f: any) => ({ '@type': 'Question', 'name': f.question, 'acceptedAnswer': { '@type': 'Answer', 'text': f.answer } }))
+    'mainEntity': faqItems.map((f) => ({ '@type': 'Question', 'name': f.question, 'acceptedAnswer': { '@type': 'Answer', 'text': f.answer } }))
   };
 
   const jsonLdArray = [serviceLd, localBusinessLd, faqLd];
@@ -319,7 +320,7 @@ function Remap({ onLogout }: { onLogout?: () => void }) {
           <div className="container">
              <h3 className={relatedTitleCls}>OTHER SERVICES</h3>
              <div className="flex justify-center gap-5 flex-wrap">
-              {[{ label: 'FLUID CHANGE', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/fluid-change' },{ label: 'ENGINE SPA', sub: 'สปาเครื่องยนต์', path: '/services/engine-spa' },{ label: 'PIPE CLEAN', sub: 'ล้างท่อร่วมไอดี', path: '/services/pipe-cleaning' },].map((item: any, i: number) => (
+              {[{ label: 'FLUID CHANGE', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/fluid-change' },{ label: 'ENGINE SPA', sub: 'สปาเครื่องยนต์', path: '/services/engine-spa' },{ label: 'PIPE CLEAN', sub: 'ล้างท่อร่วมไอดี', path: '/services/pipe-cleaning' },].map((item, i) => (
                 <div key={i} className="group w-[280px] h-[180px] bg-[#111] border border-[#333] flex items-center justify-center cursor-pointer relative overflow-hidden transition-all duration-[0.4s] [transform:skewX(-10deg)] rounded-[10px] hover:bg-[#ffc709] hover:border-[#ffc709] hover:[transform:skewX(-10deg)_translateY(-10px)] hover:shadow-[0_10px_30px_rgba(255,199,9,0.2)] max-md:transform-none max-md:w-full max-md:h-[120px]" onClick={() => go(item.path)}>
                   <div className="[transform:skewX(10deg)] text-center z-[2] max-md:transform-none"><h3 className="text-white text-[1.5rem] m-0 font-extrabold uppercase group-hover:text-black">{item.label}</h3><p className="text-[#888] mt-[5px] mb-0 group-hover:text-black">{item.sub}</p></div>
                 </div>

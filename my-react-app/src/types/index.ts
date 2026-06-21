@@ -1,3 +1,5 @@
+import type { ChangeEvent } from 'react';
+
 /**
  * Domain types สำหรับ frontend (เฟส 1)
  * --------------------------------------------------------------------------
@@ -101,6 +103,77 @@ export interface Service {
   image_url?: string;
   category?: string;
 }
+
+/**
+ * ====== Service pricing (หน้า servicePages สาธารณะ) ======
+ * backend คืนข้อมูลแบบจัดกลุ่มตามยี่ห้อ: [{ brand, models: [...] }]
+ */
+export interface ServiceModel {
+  id?: number;
+  car_model_id?: number;
+  name?: string;
+  model_name?: string;
+  brand?: string;
+  price?: number | string;
+  note?: string;
+  img?: string;
+  image_url?: string;
+  /** field อื่นๆ ที่ backend อาจแนบมา (ยังไม่ map ครบ) */
+  [key: string]: unknown;
+}
+
+export interface ServicePricingGroup {
+  brand: string;
+  models: ServiceModel[];
+}
+
+/** การ์ดรีวิว (รูป/วิดีโอ) ในหน้า servicePages */
+export interface ReviewItem {
+  type: 'image' | 'video';
+  src?: string;
+  videoId?: string;
+  title?: string;
+  desc?: string;
+}
+
+/**
+ * ====== Master data ฝั่ง admin (Dashboard) ======
+ * endpoint /api/vehicles/master/* ใช้ key brand_id/brand_name, car_model_id/model_name
+ */
+export interface AdminBrand {
+  brand_id: number;
+  brand_name: string;
+  [key: string]: unknown;
+}
+
+export interface AdminCarModel {
+  car_model_id: number;
+  model_name: string;
+  brand_id?: number;
+  [key: string]: unknown;
+}
+
+/** หนึ่งแถวราคาแบบ flat ในตารางจัดการ (Fitment/Maintenance/Upgrade/WrapCar) */
+export interface PricingRow {
+  id?: number;
+  car_model_id?: number;
+  brand?: string;
+  name?: string;
+  price?: number | string;
+  note?: string;
+  img?: string;
+  [key: string]: unknown;
+}
+
+/** state ของ modal ที่ใช้ซ้ำในหน้า CRUD */
+export interface ModalState<T = unknown> {
+  open: boolean;
+  mode: 'create' | 'edit' | 'view';
+  item?: T | null;
+}
+
+/** alias event handler ที่ใช้บ่อย (input/select/textarea ใช้ร่วมกันได้) */
+export type FormFieldEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
 
 /** payload ที่ decode ได้จาก JWT (admin token) */
 export interface JwtPayload {

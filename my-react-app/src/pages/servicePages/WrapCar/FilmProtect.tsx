@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, type ComponentProps } from 'react';
 import { useQuery } from '@tanstack/react-query';
 // 👇 เรียกใช้ CSS กลาง
 import styles from "../../../components/ServicePage/ServicePageLayout.module.css";
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
+import type { ServicePricingGroup, ServiceModel, ReviewItem } from '@/types';
 
 // Layout
 import Header from '../../../components/Layout/Header';
@@ -21,7 +22,7 @@ import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
 // ================== DATA: Film Protect (Dynamic) ==================
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?q=80&w=1000&auto=format&fit=crop', title: 'ติดตั้งฟิล์ม 3M', desc: 'ตัวอย่างงานติดตั้งฟิล์ม 3M Crystalline รอบคัน' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1549924231-f129b911e442?q=80&w=1000&auto=format&fit=crop', title: 'XPEL Ultimate', desc: 'ติดตั้งฟิล์มใสกันรอย XPEL Ultimate Plus ปกป้องสีรถ' },
   { type: 'video', videoId: 'QwZT7T-TXT0', title: 'รีวิวฟิล์มกันรอย', desc: 'ขั้นตอนการติดตั้งและทดสอบฟิล์มกันรอย' }
@@ -39,17 +40,17 @@ function FilmProtect({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   // ดึงข้อมูลจาก API
   const { data: dbData = [], isLoading: loading, isError: error } = useQuery({
     queryKey: ['service-pricing', 'film-protect'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/film-protect/pricing');
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/film-protect/pricing');
       // flatten ให้เป็น array เดียว
-      const flat: any[] = [];
-      (res || []).forEach((group: any) => {
-        (group.models || []).forEach((model: any) => {
+      const flat: ServiceModel[] = [];
+      (res || []).forEach((group: ServicePricingGroup) => {
+        (group.models || []).forEach((model: ServiceModel) => {
           flat.push({
             brand: group.brand,
             ...model
@@ -63,17 +64,17 @@ function FilmProtect({ onLogout }: { onLogout?: () => void }) {
   // แปลง Flat List -> Grouped by Brand (สำหรับ UI PriceSelector)
   const pricingData = useMemo(() => {
     if (!dbData || dbData.length === 0) return [];
-    const brands = [...new Set(dbData.map((item: any) => item.brand))];
-    return brands.map(brand => ({
-      brand: brand,
-      models: dbData.filter((item: any) => item.brand === brand)
+    const brands = [...new Set(dbData.map((item: ServiceModel) => item.brand))];
+    return brands.map((brand): ServicePricingGroup => ({
+      brand: brand as string,
+      models: dbData.filter((item: ServiceModel) => item.brand === brand)
     }));
   }, [dbData]);
 
   // Flatten Data สำหรับ ServiceCatalog
   const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) =>
-      brandGroup.models.map((model: any) => ({
+    return pricingData.flatMap((brandGroup: ServicePricingGroup) =>
+      brandGroup.models.map((model: ServiceModel) => ({
         ...model,
         brand: brandGroup.brand,
         image_url: model.image_url || model.img || ''
@@ -81,7 +82,7 @@ function FilmProtect({ onLogout }: { onLogout?: () => void }) {
     );
   }, [pricingData]);
 
-  const handleOpenPopup = (item: any) => { 
+  const handleOpenPopup = (item: ServiceModel) => {
     setModalData(item); 
     setShowModal(true); 
   };
@@ -93,7 +94,7 @@ function FilmProtect({ onLogout }: { onLogout?: () => void }) {
   const mainImage = heroImage;
 
   // Logic หา Low Price สำหรับ SEO
-  const prices = allServicePackages.map((p: any) => { 
+  const prices = allServicePackages.map((p: ServiceModel) => {
     const digits = String(p.price || '').replace(/[^0-9]/g, ''); 
     return digits ? Number(digits) : null; 
   }).filter((n: number | null): n is number => n !== null);
@@ -125,7 +126,7 @@ function FilmProtect({ onLogout }: { onLogout?: () => void }) {
   const faqLd = {
     '@context': 'https://schema.org', 
     '@type': 'FAQPage',
-    'mainEntity': faqItems.map((f: any) => ({ '@type': 'Question', 'name': f.question, 'acceptedAnswer': { '@type': 'Answer', 'text': f.answer } }))
+    'mainEntity': faqItems.map((f) => ({ '@type': 'Question', 'name': f.question, 'acceptedAnswer': { '@type': 'Answer', 'text': f.answer } }))
   };
 
   const jsonLdArray = [serviceLd, localBusinessLd, faqLd];
@@ -173,7 +174,7 @@ function FilmProtect({ onLogout }: { onLogout?: () => void }) {
 
         {/* 2. Price Selector (Dynamic) */}
         {pricingData.length > 0 ? (
-          <PriceSelector pricingData={pricingData} />
+          <PriceSelector pricingData={pricingData as ComponentProps<typeof PriceSelector>['pricingData']} />
         ) : (
           <div style={{ textAlign: 'center', padding: '40px', color: '#fff' }}>
             ยังไม่มีข้อมูลราคาในระบบ
@@ -189,7 +190,7 @@ function FilmProtect({ onLogout }: { onLogout?: () => void }) {
                 { label: 'FLUID CHANGE', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/fluid-change' },
                 { label: 'ENGINE SPA', sub: 'สปาเครื่องยนต์', path: '/services/engine-spa' },
                 { label: 'PIPE CLEAN', sub: 'ล้างท่อร่วมไอดี', path: '/services/pipe-cleaning' },
-              ].map((item: any, i: number) => (
+              ].map((item, i: number) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>
@@ -202,9 +203,9 @@ function FilmProtect({ onLogout }: { onLogout?: () => void }) {
         </section>
 
         {/* 4. Service Catalog */}
-        <ServiceCatalog 
-          allPackages={allServicePackages} 
-          onOpenModal={handleOpenPopup} 
+        <ServiceCatalog
+          allPackages={allServicePackages as ComponentProps<typeof ServiceCatalog>['allPackages']}
+          onOpenModal={handleOpenPopup as ComponentProps<typeof ServiceCatalog>['onOpenModal']}
         />
 
         {/* 5. Review Gallery */}

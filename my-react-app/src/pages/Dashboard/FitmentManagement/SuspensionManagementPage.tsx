@@ -9,18 +9,31 @@ import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaSave, FaCar, FaWrench, Fa
 // 🔥 Import DashboardHeader เข้ามาใช้งาน
 import DashboardHeader from '../../../components/DashboardHeader';
 
+import type { AdminBrand, AdminCarModel, PricingRow, ServiceModel, ServicePricingGroup, FormFieldEvent } from '@/types';
+
+/** รูปแบบ formData ในหน้านี้ (มี index signature เพราะ handleChange เซ็ตด้วย field name แบบ dynamic) */
+interface PricingForm {
+  id: number | null;
+  brand_id: number | string;
+  car_model_id: number | string;
+  price: number | string;
+  note: string;
+  img: string;
+  [key: string]: number | string | null;
+}
+
 // รับ props onLogout มาเผื่อใช้งาน
 export default function SuspensionManagementPage({ onLogout }: { onLogout?: () => void }) {
   // --- State ---
   const queryClient = useQueryClient();
-  const [brands, setBrands] = useState<any[]>([]);
-  const [models, setModels] = useState<any[]>([]);
+  const [brands, setBrands] = useState<AdminBrand[]>([]);
+  const [models, setModels] = useState<AdminCarModel[]>([]);
 
   // UI State
   const [search, setSearch] = useState('');
-  const [modal, setModal] = useState<any>({ open: false, mode: 'create' });
+  const [modal, setModal] = useState<{ open: boolean; mode: 'create' | 'edit' }>({ open: false, mode: 'create' });
 
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<PricingForm>({
     id: null,
     brand_id: '',
     car_model_id: '',
@@ -33,11 +46,11 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
   const { data: items = [], isLoading: loading } = useQuery({
     queryKey: ['suspension-pricing-admin'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/suspension/pricing');
-      const flat: any[] = [];
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/suspension/pricing');
+      const flat: PricingRow[] = [];
       if (Array.isArray(res)) {
-        res.forEach((group: any) => {
-          (group.models || []).forEach((model: any) => {
+        res.forEach((group: ServicePricingGroup) => {
+          (group.models || []).forEach((model: ServiceModel) => {
             flat.push({
               brand: group.brand,
               name: model.name,
@@ -60,7 +73,7 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
   useEffect(() => {
     // Fetch Brands
     const fetchBrands = async () => {
-      const res: any = await api.apiGet('/api/vehicles/master/brands');
+      const res = await api.apiGet<{ data: AdminBrand[] }>('/api/vehicles/master/brands');
       setBrands(res.data || []);
     };
     fetchBrands();
@@ -70,7 +83,7 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
   useEffect(() => {
     if (formData.brand_id) {
       const fetchModels = async () => {
-        const res: any = await api.apiGet(`/api/vehicles/master/models?brand_id=${formData.brand_id}`);
+        const res = await api.apiGet<{ data: AdminCarModel[] }>(`/api/vehicles/master/models?brand_id=${formData.brand_id}`);
         setModels(res.data || []);
       };
       fetchModels();
@@ -82,7 +95,7 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
   // --- Mutations ---
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const serviceRes: any = await api.apiGet('/api/services?search=Suspension');
+      const serviceRes = await api.apiGet<Array<{ service_id: number }>>('/api/services?search=Suspension');
       const service = (serviceRes && serviceRes.length > 0) ? serviceRes[0] : null;
       if (!service) {
         throw new Error('ไม่พบบริการ Suspension ในระบบ');
@@ -100,15 +113,15 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
       closeModal();
       refresh();
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       console.error("Error saving data:", err);
       alert(err?.message || 'เกิดข้อผิดพลาด');
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (car_model_id: any) => {
-      const serviceRes: any = await api.apiGet('/api/services?search=Suspension');
+    mutationFn: async (car_model_id: number | string | undefined) => {
+      const serviceRes = await api.apiGet<Array<{ service_id: number }>>('/api/services?search=Suspension');
       const service = (serviceRes && serviceRes.length > 0) ? serviceRes[0] : null;
       if (!service) return;
       return api.apiPatch('/api/services/pricing', {
@@ -118,18 +131,18 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
       }, { auth: true });
     },
     onSuccess: refresh,
-    onError: (err: any) => {
+    onError: (err: Error) => {
       console.error("Error deleting:", err);
     },
   });
 
   // --- Handlers ---
-  const handleChange = (e: any) => {
+  const handleChange = (e: FormFieldEvent) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev: PricingForm) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.car_model_id || !formData.price) {
       alert('กรุณาเลือกยี่ห้อ/รุ่นรถ และกรอกราคา');
@@ -138,20 +151,20 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
     saveMutation.mutate();
   };
 
-  const handleEdit = (item: any) => {
-    const brandObj = brands.find((b: any) => b.brand_name === item.brand);
+  const handleEdit = (item: PricingRow) => {
+    const brandObj = brands.find((b: AdminBrand) => b.brand_name === item.brand);
     setFormData({
-      id: item.id,
+      id: item.id ?? null,
       brand_id: brandObj ? brandObj.brand_id : '',
-      car_model_id: item.car_model_id,
-      price: item.price,
-      note: item.note,
-      img: item.img
+      car_model_id: item.car_model_id ?? '',
+      price: item.price ?? '',
+      note: item.note ?? '',
+      img: item.img ?? ''
     });
     setModal({ open: true, mode: 'edit' });
   };
 
-  const handleDelete = (car_model_id: any) => {
+  const handleDelete = (car_model_id: number | string | undefined) => {
     if (window.confirm('คุณแน่ใจหรือไม่ว่าจะลบรายการนี้?')) {
       deleteMutation.mutate(car_model_id);
     }
@@ -168,13 +181,13 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
   };
 
   // --- Filtering ---
-  const filteredItems = items.filter((item: any) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.brand.toLowerCase().includes(search.toLowerCase())
+  const filteredItems = items.filter((item: PricingRow) =>
+    (item.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    (item.brand ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
   // Helper for Tabs Style
-  const tabStyle = (path: any) => {
+  const tabStyle = (path: string) => {
     const isActive = window.location.pathname.includes(path);
     return {
       padding: '10px 15px',
@@ -250,7 +263,7 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
                             {filteredItems.length === 0 && (
                                 <tr><td colSpan={5} style={{ textAlign: 'center', padding: '30px' }}>No data found.</td></tr>
                             )}
-                            {filteredItems.map((item: any, idx: any) => (
+                            {filteredItems.map((item: PricingRow, idx: number) => (
                                 <tr key={idx}>
                                     <td>{item.brand}</td>
                                     <td>{item.name}</td>
@@ -294,7 +307,7 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
                                 required
                             >
                                 <option value="">-- Select Brand --</option>
-                                {brands.map((b: any) => <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>)}
+                                {brands.map((b: AdminBrand) => <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>)}
                             </select>
                         </div>
 
@@ -309,7 +322,7 @@ export default function SuspensionManagementPage({ onLogout }: { onLogout?: () =
                                 disabled={!formData.brand_id}
                             >
                                 <option value="">-- Select Model --</option>
-                                {models.map((m: any) => <option key={m.car_model_id} value={m.car_model_id}>{m.model_name}</option>)}
+                                {models.map((m: AdminCarModel) => <option key={m.car_model_id} value={m.car_model_id}>{m.model_name}</option>)}
                             </select>
                         </div>
 

@@ -13,6 +13,8 @@ import ServiceCatalog from '../../../components/ServicePage/ServiceCatalog';
 import ReviewGallery from '../../../components/ServicePage/ReviewGallery';
 import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
+import type { ServiceModel, ReviewItem } from '@/types';
+
 // ================== DATA: NANO COATING ==================
 const pricingData = [
   {
@@ -32,7 +34,7 @@ const pricingData = [
   }
 ];
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?q=80&w=1000&auto=format&fit=crop', title: 'Nano Coating', desc: 'ฟิล์มเคลือบสีรถ' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1625047509168-a7026f36de04', title: 'Paint Protection', desc: 'ป้องกันรอยขีดข่วน' },
   { type: 'video', videoId: 'dQw4w9WgXcQ', title: 'Nano Application', desc: 'ขั้นตอนการเคลือบ' }
@@ -42,13 +44,14 @@ function Nano({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   // Flatten all models for ServiceCatalog
-  const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) => brandGroup.models.map((model: any) => ({ ...model, brand: brandGroup.brand })));
+  const allServicePackages = useMemo<ServiceModel[]>(() => {
+    return pricingData.flatMap((brandGroup) => brandGroup.models.map((model) => ({ ...model, brand: brandGroup.brand })));
   }, []);
 
+  // param คง any: ServiceCatalog ส่ง PackageItem (ไม่มี index signature) ทำให้ใส่ ServiceModel แล้ว prop callback ไม่ assignable
   const handleOpenPopup = (item: any) => { setModalData(item); setShowModal(true); };
 
   const heroImage = 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?q=80&w=1600&auto=format&fit=crop';
@@ -58,7 +61,7 @@ function Nano({ onLogout }: { onLogout?: () => void }) {
   const mainImage = heroImage;
 
   // For SEO price range
-  const prices = allServicePackages.map((p: any) => {
+  const prices = allServicePackages.map((p) => {
     const digits = String(p.price || '').replace(/[^0-9]/g, '');
     return digits ? Number(digits) : null;
   }).filter((n: number | null): n is number => n !== null);
@@ -105,7 +108,7 @@ function Nano({ onLogout }: { onLogout?: () => void }) {
                 { label: 'GT7', sub: 'Premium Products', path: '/services/product/gt7' },
                 { label: 'STEP 1', sub: 'Engine Treatment', path: '/services/product/step1' },
                 { label: 'M-MAX', sub: 'Engine Care', path: '/services/product/mmax' },
-              ].map((item: any, i: number) => (
+              ].map((item, i) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>

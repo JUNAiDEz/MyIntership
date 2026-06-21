@@ -17,11 +17,12 @@ import ReviewGallery from '../../../components/ServicePage/ReviewGallery';
 import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
 import api from '../../../utils/api';
+import type { ServicePricingGroup, ServiceModel, ReviewItem } from '@/types';
 
 // ================== DATA: AIR CONDITIONING ==================
 // pricingData จะถูกดึงจาก API
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=1000&auto=format&fit=crop', title: 'Before & After ล้างแอร์', desc: 'คราบเมือกและฝุ่นสะสม' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1632823471565-1ec20121d1f5', title: 'ล้างแบบไม่ถอดตู้', desc: 'ใช้กล้อง Micro Cam ส่อง' },
   { type: 'video', videoId: 'dQw4w9WgXcQ', title: 'ขั้นตอนการล้างแอร์', desc: 'รีวิวขั้นตอนการทำงาน' }
@@ -32,12 +33,12 @@ function AirCon({ onLogout }: { onLogout?: () => void }) {
   const go = (path: string) => navigate(path);
   
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   const { data: dbData = [], isLoading: loadingPricing, isError: errorPricing } = useQuery({
     queryKey: ['service-pricing', 'aircon'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/aircon/pricing');
+      const res = await api.apiGet<ServicePricingGroup[]>('/api/services/aircon/pricing');
       return Array.isArray(res) ? res : [];
     },
   });
@@ -45,15 +46,15 @@ function AirCon({ onLogout }: { onLogout?: () => void }) {
   // แปลงข้อมูลให้เหมาะกับ UI เดิม
   const pricingData = useMemo(() => {
     if (!Array.isArray(dbData) || dbData.length === 0) return [];
-    return dbData.map((brandGroup: any) => ({
+    return dbData.map((brandGroup: ServicePricingGroup) => ({
       brand: brandGroup.brand,
-      models: (brandGroup.models || []).map((model: any) => ({ ...model }))
+      models: (brandGroup.models || []).map((model: ServiceModel) => ({ ...model }))
     }));
   }, [dbData]);
 
   const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) =>
-      brandGroup.models.map((model: any) => ({
+    return pricingData.flatMap((brandGroup: ServicePricingGroup) =>
+      brandGroup.models.map((model: ServiceModel) => ({
         ...model,
         brand: brandGroup.brand,
         image_url: model.image_url || model.img || ''
@@ -63,7 +64,7 @@ function AirCon({ onLogout }: { onLogout?: () => void }) {
   if (loadingPricing) return <div className={styles.pageContainer}><Header onLogout={onLogout} /><main className={styles.mainContent}><div style={{ textAlign: 'center', padding: '100px 20px', color: '#ffc709' }}><h2>กำลังโหลดข้อมูล...</h2></div></main><Footer /></div>;
   if (errorPricing) return <div className={styles.pageContainer}><Header onLogout={onLogout} /><main className={styles.mainContent}><div style={{ textAlign: 'center', padding: '100px 20px', color: 'red' }}><h2>ไม่สามารถโหลดข้อมูลราคาได้</h2></div></main><Footer /></div>;
 
-  const handleOpenPopup = (item: any) => { setModalData(item); setShowModal(true); };
+  const handleOpenPopup = (item: ServiceModel) => { setModalData(item); setShowModal(true); };
 
   const heroImage = 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=1600&auto=format&fit=crop';
   const pageUrl = typeof window !== 'undefined' ? window.location.href : 'https://front.gt7dev.com/services/maintenance/aircon';
@@ -72,7 +73,7 @@ function AirCon({ onLogout }: { onLogout?: () => void }) {
   const mainImage = heroImage;
 
   // Logic หา Low Price สำหรับ SEO
-  const prices = allServicePackages.map((p: any) => {
+  const prices = allServicePackages.map((p: ServiceModel) => {
     const digits = String(p.price || '').replace(/[^0-9]/g, '');
     return digits ? Number(digits) : null;
   }).filter((n: number | null): n is number => n !== null);
@@ -112,7 +113,7 @@ function AirCon({ onLogout }: { onLogout?: () => void }) {
         />
 
         {/* 2. Price Selector */}
-        <PriceSelector pricingData={pricingData} />
+        <PriceSelector pricingData={pricingData as React.ComponentProps<typeof PriceSelector>['pricingData']} />
 
         {/* 3. Other Services */}
         <section className={styles.relatedServices}>
@@ -123,7 +124,7 @@ function AirCon({ onLogout }: { onLogout?: () => void }) {
                 { label: 'Pipe Cleaning', sub: 'ล้างท่อร่วมไอดี', path: '/services/maintenance/pipe-cleaning' },
                 { label: 'Fluid Change', sub: 'เปลี่ยนถ่ายของเหลว', path: '/services/maintenance/fluid-change' },
                 { label: 'Engine Spa', sub: 'สปาเครื่องยนต์', path: '/services/maintenance/engine-spa' },
-              ].map((item: any, i: number) => (
+              ].map((item, i: number) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>
@@ -137,8 +138,8 @@ function AirCon({ onLogout }: { onLogout?: () => void }) {
 
         {/* 4. Service Catalog */}
         <ServiceCatalog 
-          allPackages={allServicePackages} 
-          onOpenModal={handleOpenPopup} 
+          allPackages={allServicePackages}
+          onOpenModal={handleOpenPopup as React.ComponentProps<typeof ServiceCatalog>['onOpenModal']}
         />
 
         {/* 5. Review Gallery */}

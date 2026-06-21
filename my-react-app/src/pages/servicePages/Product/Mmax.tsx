@@ -13,6 +13,8 @@ import ServiceCatalog from '../../../components/ServicePage/ServiceCatalog';
 import ReviewGallery from '../../../components/ServicePage/ReviewGallery';
 import ServiceModal from '../../../components/ServicePage/ServiceModal';
 
+import type { ServiceModel, ReviewItem } from '@/types';
+
 // ================== DATA: M-MAX ==================
 const pricingData = [
   {
@@ -31,7 +33,7 @@ const pricingData = [
   }
 ];
 
-const reviewItems = [
+const reviewItems: ReviewItem[] = [
   { type: 'image', src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1000&auto=format&fit=crop', title: 'M-MAX Treatment', desc: 'เพิ่มประสิทธิภาพเครื่องยนต์' },
   { type: 'image', src: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3', title: 'Engine Performance', desc: 'ลดเสียงดัง เพิ่มแรง' },
   { type: 'video', videoId: 'dQw4w9WgXcQ', title: 'M-MAX Application', desc: 'วิธีการใช้งาน' }
@@ -41,13 +43,14 @@ function Mmax({ onLogout }: { onLogout?: () => void }) {
   const navigate = useNavigate();
   const go = (path: string) => navigate(path);
   const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState<any>(null);
+  const [modalData, setModalData] = useState<ServiceModel | null>(null);
 
   // Flatten all models for ServiceCatalog
-  const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) => brandGroup.models.map((model: any) => ({ ...model, brand: brandGroup.brand })));
+  const allServicePackages = useMemo<ServiceModel[]>(() => {
+    return pricingData.flatMap((brandGroup) => brandGroup.models.map((model) => ({ ...model, brand: brandGroup.brand })));
   }, []);
 
+  // param คง any: ServiceCatalog ส่ง PackageItem (ไม่มี index signature) ทำให้ใส่ ServiceModel แล้ว prop callback ไม่ assignable
   const handleOpenPopup = (item: any) => { setModalData(item); setShowModal(true); };
 
   const heroImage = 'https://images.unsplash.com/photo-1621503940178-62024220cc33?q=80&w=1600&auto=format&fit=crop';
@@ -57,7 +60,7 @@ function Mmax({ onLogout }: { onLogout?: () => void }) {
   const mainImage = heroImage;
 
   // For SEO price range
-  const prices = allServicePackages.map((p: any) => {
+  const prices = allServicePackages.map((p) => {
     const digits = String(p.price || '').replace(/[^0-9]/g, '');
     return digits ? Number(digits) : null;
   }).filter((n: number | null): n is number => n !== null);
@@ -104,7 +107,7 @@ function Mmax({ onLogout }: { onLogout?: () => void }) {
                 { label: 'GT7', sub: 'Premium Products', path: '/services/product/gt7' },
                 { label: 'STEP 1', sub: 'Engine Treatment', path: '/services/product/step1' },
                 { label: 'Nano Coating', sub: 'Paint Protection', path: '/services/product/nano' },
-              ].map((item: any, i: number) => (
+              ].map((item, i) => (
                 <div key={i} className={styles.thumbnailCard} onClick={() => go(item.path)}>
                   <div className={styles.thumbnailText}>
                     <h3>{item.label}</h3>

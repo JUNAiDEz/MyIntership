@@ -2,12 +2,27 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../utils/api';
+import type { AdminBrand, AdminCarModel, PricingRow, FormFieldEvent } from '@/types';
 // ใช้ไฟล์ Theme กลาง
 import styles from '../../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaSave, FaCar, FaWrench, FaBoxOpen, FaTags } from 'react-icons/fa';
 
 // 🔥 Import DashboardHeader เข้ามาใช้งาน
 import DashboardHeader from '../../../components/DashboardHeader';
+
+interface PricingForm {
+  id: number | null;
+  brand_id: number | string;
+  car_model_id: number | string;
+  price: number | string;
+  note: string;
+  img: string;
+}
+
+interface PricingGroup {
+  brand: string;
+  models?: PricingRow[];
+}
 
 // รับ props onLogout มาเผื่อใช้งาน
 export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () => void }) {
@@ -17,11 +32,11 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
   const { data: items = [], isLoading: loading } = useQuery({
     queryKey: ['film-protect-pricing'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/services/film-protect/pricing');
-      const flat: any[] = [];
+      const res = await api.apiGet<PricingGroup[]>('/api/services/film-protect/pricing');
+      const flat: PricingRow[] = [];
       if (Array.isArray(res)) {
-        res.forEach((group: any) => {
-          (group.models || []).forEach((model: any) => {
+        res.forEach((group: PricingGroup) => {
+          (group.models || []).forEach((model: PricingRow) => {
             flat.push({
               brand: group.brand,
               name: model.name,
@@ -42,18 +57,18 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
   const { data: brands = [] } = useQuery({
     queryKey: ['vehicle-brands'],
     queryFn: async () => {
-      const res: any = await api.apiGet('/api/vehicles/master/brands');
+      const res = await api.apiGet<{ data: AdminBrand[] }>('/api/vehicles/master/brands');
       return res.data || [];
     },
   });
 
-  const [models, setModels] = useState<any[]>([]);
+  const [models, setModels] = useState<AdminCarModel[]>([]);
 
   // UI State
   const [search, setSearch] = useState('');
-  const [modal, setModal] = useState<any>({ open: false, mode: 'create' });
+  const [modal, setModal] = useState<{ open: boolean; mode: 'create' | 'edit' }>({ open: false, mode: 'create' });
 
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<PricingForm>({
     id: null,
     brand_id: '',
     car_model_id: '',
@@ -69,7 +84,7 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
   useEffect(() => {
     if (formData.brand_id) {
       const fetchModels = async () => {
-        const res: any = await api.apiGet(`/api/vehicles/master/models?brand_id=${formData.brand_id}`);
+        const res = await api.apiGet<{ data: AdminCarModel[] }>(`/api/vehicles/master/models?brand_id=${formData.brand_id}`);
         setModels(res.data || []);
       };
       fetchModels();
@@ -80,7 +95,7 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const serviceRes: any = await api.apiGet('/api/services?search=Film Protect');
+      const serviceRes = await api.apiGet<Array<{ service_id: number }>>('/api/services?search=Film Protect');
       const service = (serviceRes && serviceRes.length > 0) ? serviceRes[0] : null;
       if (!service) {
         throw new Error('ไม่พบบริการ Film Protect ในระบบ');
@@ -98,15 +113,15 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
       closeModal();
       refresh();
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       console.error("Error saving data:", e);
-      alert(e?.message || 'เกิดข้อผิดพลาด');
+      alert((e instanceof Error ? e.message : '') || 'เกิดข้อผิดพลาด');
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (car_model_id: any) => {
-      const serviceRes: any = await api.apiGet('/api/services?search=Film Protect');
+    mutationFn: async (car_model_id: number | string) => {
+      const serviceRes = await api.apiGet<Array<{ service_id: number }>>('/api/services?search=Film Protect');
       const service = (serviceRes && serviceRes.length > 0) ? serviceRes[0] : null;
       if (!service) return;
 
@@ -117,16 +132,16 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
       }, { auth: true });
     },
     onSuccess: refresh,
-    onError: (e: any) => console.error("Error deleting:", e),
+    onError: (e: unknown) => console.error("Error deleting:", e),
   });
 
   // --- Handlers ---
-  const handleChange = (e: any) => {
+  const handleChange = (e: FormFieldEvent) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev: PricingForm) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.car_model_id || !formData.price) {
       alert('กรุณาเลือกยี่ห้อ/รุ่นรถ และกรอกราคา');
@@ -135,20 +150,21 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
     saveMutation.mutate();
   };
 
-  const handleEdit = (item: any) => {
-    const brandObj = brands.find((b: any) => b.brand_name === item.brand);
+  const handleEdit = (item: PricingRow) => {
+    const brandObj = brands.find((b: AdminBrand) => b.brand_name === item.brand);
     setFormData({
-      id: item.id,
+      id: item.id ?? null,
       brand_id: brandObj ? brandObj.brand_id : '',
-      car_model_id: item.car_model_id,
-      price: item.price,
-      note: item.note,
-      img: item.img
+      car_model_id: item.car_model_id ?? '',
+      price: item.price ?? '',
+      note: item.note ?? '',
+      img: item.img ?? ''
     });
     setModal({ open: true, mode: 'edit' });
   };
 
-  const handleDelete = (car_model_id: any) => {
+  const handleDelete = (car_model_id: number | string | undefined) => {
+    if (car_model_id == null) return;
     if (window.confirm('คุณแน่ใจหรือไม่ว่าจะลบรายการนี้?')) {
       deleteMutation.mutate(car_model_id);
     }
@@ -165,13 +181,13 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
   };
 
   // --- Filtering ---
-  const filteredItems = items.filter((item: any) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.brand.toLowerCase().includes(search.toLowerCase())
+  const filteredItems = items.filter((item: PricingRow) =>
+    (item.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (item.brand || '').toLowerCase().includes(search.toLowerCase())
   );
 
   // Helper for Tabs Style
-  const tabStyle = (path: any): React.CSSProperties => {
+  const tabStyle = (path: string): React.CSSProperties => {
     const isActive = window.location.pathname.includes(path);
     return {
       padding: '10px 15px',
@@ -246,7 +262,7 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
                             {filteredItems.length === 0 && (
                                 <tr><td colSpan={5} style={{ textAlign: 'center', padding: '30px' }}>No data found.</td></tr>
                             )}
-                            {filteredItems.map((item: any, idx: any) => (
+                            {filteredItems.map((item: PricingRow, idx: number) => (
                                 <tr key={idx}>
                                     <td>{item.brand}</td>
                                     <td>{item.name}</td>
@@ -290,7 +306,7 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
                                 required
                             >
                                 <option value="">-- Select Brand --</option>
-                                {brands.map((b: any) => <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>)}
+                                {brands.map((b: AdminBrand) => <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>)}
                             </select>
                         </div>
 
@@ -305,7 +321,7 @@ export default function FilmProtectManagementPage({ onLogout }: { onLogout?: () 
                                 disabled={!formData.brand_id}
                             >
                                 <option value="">-- Select Model --</option>
-                                {models.map((m: any) => <option key={m.car_model_id} value={m.car_model_id}>{m.model_name}</option>)}
+                                {models.map((m: AdminCarModel) => <option key={m.car_model_id} value={m.car_model_id}>{m.model_name}</option>)}
                             </select>
                         </div>
 
