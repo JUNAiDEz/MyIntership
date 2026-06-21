@@ -1,15 +1,37 @@
 import { useState, useMemo } from 'react';
+import type { ChangeEvent, FormEvent, MouseEvent, SyntheticEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaTimes, FaSearch, FaCar } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
 import { API_URL } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
+import type { AdminBrand, AdminCarModel, ApiEnvelope, FormFieldEvent, ModalState } from '@/types';
 
 const getToken = () => localStorage.getItem('adminToken');
 
+/** แถวรถที่ map แล้วสำหรับแสดงในกริด/ฟอร์ม (flat shape ภายในหน้า) */
+interface CarRow {
+  id: number;
+  brand_id: number;
+  brand_name: string;
+  model: string;
+  year?: number;
+  size: string;
+  imageUrl: string;
+}
+
+/** state ของฟอร์มเพิ่ม/แก้ไขรถ */
+interface CarForm {
+  brand_id: number | string;
+  model_name: string;
+  model_year: number | string;
+  car_size: string;
+  image_url: string;
+}
+
 // --- ฟังก์ชันแก้บั๊ก Base64 (คงเดิม) ---
-const sanitizeBase64 = (str: any) => {
+const sanitizeBase64 = (str: string | null | undefined): string => {
   if (!str) return '';
   let clean = str.trim();
   if (clean.startsWith('data:')) {
@@ -44,10 +66,12 @@ function CarManagementPage() {
   const [yearFilter, setYearFilter] = useState('');
 
   // --- Modal & Form ---
-  const [modal, setModal] = useState<any>({ open: false, mode: 'view', car: null });
+  // ใช้ ModalState กลาง แต่หน้านี้เก็บ payload ที่ key `car` (ไม่ใช่ `item`)
+  type CarModalState = Pick<ModalState<CarRow>, 'open' | 'mode'> & { car: CarRow | null };
+  const [modal, setModal] = useState<CarModalState>({ open: false, mode: 'view', car: null });
 
   // Form State
-  const [createForm, setCreateForm] = useState<any>({
+  const [createForm, setCreateForm] = useState<CarForm>({
     brand_id: '',
     model_name: '',
     model_year: '',
@@ -55,50 +79,50 @@ function CarManagementPage() {
     image_url: ''
   });
 
-  const [imageFile, setImageFile] = useState<any>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState('');
   const [createError, setCreateError] = useState('');
 
   // --- Headers ---
   const headers = useMemo(() => {
-    const h: any = { 'Content-Type': 'application/json' };
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) h.Authorization = `Bearer ${token}`;
     return h;
   }, []);
 
   // --- 1. Fetch Data ---
-  const brandsQuery = useQuery({
+  const brandsQuery = useQuery<AdminBrand[]>({
     queryKey: ['car-brands'],
     queryFn: async () => {
       const brandRes = await fetch(`${API_URL}/api/vehicles/master/brands`, { headers });
       if (!brandRes.ok) throw new Error('ไม่สามารถโหลดยี่ห้อรถได้');
-      const brandData = await brandRes.json();
+      const brandData: ApiEnvelope<AdminBrand[]> = await brandRes.json();
       return brandData.data || [];
     },
   });
 
-  const carsQuery = useQuery({
+  const carsQuery = useQuery<CarRow[]>({
     queryKey: ['cars'],
     queryFn: async () => {
       const modelRes = await fetch(`${API_URL}/api/vehicles/master/models`, { headers });
       if (!modelRes.ok) throw new Error('ไม่สามารถโหลดรุ่นรถได้');
-      const modelData = await modelRes.json();
-      return (modelData.data || []).map((car: any) => ({
+      const modelData: ApiEnvelope<AdminCarModel[]> = await modelRes.json();
+      return (modelData.data || []).map((car): CarRow => ({
         id: car.car_model_id,
-        brand_id: car.brand_id,
-        brand_name: car.brand?.brand_name || 'Unknown',
+        brand_id: Number(car.brand_id),
+        brand_name: (car.brand as { brand_name?: string } | undefined)?.brand_name || 'Unknown',
         model: car.model_name,
-        year: car.model_year,
-        size: car.car_size,
-        imageUrl: car.image_url ? sanitizeBase64(car.image_url) : ''
+        year: car.model_year as number | undefined,
+        size: car.car_size as string,
+        imageUrl: car.image_url ? sanitizeBase64(car.image_url as string) : ''
       }));
     },
   });
 
-  const brands: any[] = brandsQuery.data || [];
-  const cars: any[] = carsQuery.data || [];
+  const brands: AdminBrand[] = brandsQuery.data || [];
+  const cars: CarRow[] = carsQuery.data || [];
   const loading = brandsQuery.isLoading || carsQuery.isLoading;
   const error = brandsQuery.error || carsQuery.error
     ? ((brandsQuery.error || carsQuery.error) instanceof Error
@@ -112,11 +136,11 @@ function CarManagementPage() {
 
   // Calculate Available Years for Filter Dropdown
   const availableYears = useMemo(() => {
-    const years = cars.map((c: any) => c.year).filter((y: any) => y); // Get valid years
-    return [...new Set(years)].sort((a: any, b: any) => b - a); // Unique & Descending
+    const years = cars.map((c) => c.year).filter((y): y is number => !!y); // Get valid years
+    return [...new Set(years)].sort((a, b) => b - a); // Unique & Descending
   }, [cars]);
 
-  const filteredCars = cars.filter((c: any) => {
+  const filteredCars = cars.filter((c) => {
     let searchOk = true;
     let brandOk = true;
     let typeOk = true;
@@ -151,7 +175,7 @@ function CarManagementPage() {
   const visible = filteredCars.slice((page - 1) * pageSize, page * pageSize);
 
   // --- 3. Actions ---
-  const handleImageUpload = async (file: any) => {
+  const handleImageUpload = async (file: File | undefined) => {
     if (!file) return;
     setImageFile(file);
     setImageUploadError('');
@@ -159,11 +183,11 @@ function CarManagementPage() {
     try {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCreateForm((prev: any) => ({ ...prev, image_url: reader.result }));
+        setCreateForm((prev) => ({ ...prev, image_url: (reader.result as string) ?? '' }));
         setUploadingImage(false);
       };
-      reader.onerror = (err: any) => {
-        setImageUploadError('อัปโหลดรูปไม่สำเร็จ: ' + err.message);
+      reader.onerror = () => {
+        setImageUploadError('อัปโหลดรูปไม่สำเร็จ: ' + (reader.error?.message ?? ''));
         setUploadingImage(false);
       };
       reader.readAsDataURL(file);
@@ -192,38 +216,38 @@ function CarManagementPage() {
       }
 
       const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
-      const result = await res.json();
+      const result: ApiEnvelope<unknown> = await res.json();
       if (!res.ok) throw new Error(result.message || 'บันทึกไม่สำเร็จ');
       return result;
     },
     onSuccess: () => { refresh(); setModal({ open: false, mode: 'view', car: null }); },
-    onError: (err: any) => setCreateError(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => setCreateError(err instanceof Error ? err.message : String(err)),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => {
+    mutationFn: async (id: number) => {
       const res = await fetch(`${API_URL}/api/vehicles/master/models/${id}`, { method: 'DELETE', headers });
-      const result = await res.json();
+      const result: ApiEnvelope<unknown> = await res.json();
       if (!res.ok) throw new Error(result.message || 'ลบไม่สำเร็จ');
       return result;
     },
     onSuccess: refresh,
-    onError: (err: any) => alert('เกิดข้อผิดพลาด: ' + (err instanceof Error ? err.message : String(err))),
+    onError: (err: unknown) => alert('เกิดข้อผิดพลาด: ' + (err instanceof Error ? err.message : String(err))),
   });
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCreateError('');
     saveMutation.mutate();
   };
 
-  const handleDelete = (id: any) => {
+  const handleDelete = (id: number) => {
     if (!window.confirm('ยืนยันการลบข้อมูลรถยนต์?')) return;
     deleteMutation.mutate(id);
   };
 
   // --- 4. Modal Control ---
-  const openModal = (mode: any, car: any = null) => {
+  const openModal = (mode: CarModalState['mode'], car: CarRow | null = null) => {
     if ((mode === 'edit' || mode === 'view') && car) {
       setCreateForm({
         brand_id: car.brand_id || '',
@@ -268,7 +292,7 @@ function CarManagementPage() {
                     className={styles.searchInput}
                     placeholder="Search Brand, Model..."
                     value={search}
-                    onChange={(e: any) => { setSearch(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setSearch(e.target.value); setPage(1); }}
                 />
             </div>
 
@@ -278,11 +302,11 @@ function CarManagementPage() {
                 <select
                     className={styles.filterSelect}
                     value={brandFilter}
-                    onChange={(e: any) => { setBrandFilter(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setBrandFilter(e.target.value); setPage(1); }}
                     style={{ margin: 0, minWidth: '150px' }}
                 >
                     <option value="">ทั้งหมด</option>
-                    {brands.map((b: any) => (
+                    {brands.map((b) => (
                         <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>
                     ))}
                 </select>
@@ -294,7 +318,7 @@ function CarManagementPage() {
                 <select
                     className={styles.filterSelect}
                     value={typeFilter}
-                    onChange={(e: any) => { setTypeFilter(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setTypeFilter(e.target.value); setPage(1); }}
                     style={{ margin: 0, minWidth: '150px' }}
                 >
                     <option value="">ทั้งหมด</option>
@@ -314,11 +338,11 @@ function CarManagementPage() {
                 <select
                     className={styles.filterSelect}
                     value={yearFilter}
-                    onChange={(e: any) => { setYearFilter(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setYearFilter(e.target.value); setPage(1); }}
                     style={{ margin: 0, minWidth: '120px' }}
                 >
                     <option value="">ทั้งหมด</option>
-                    {availableYears.map((y: any) => (
+                    {availableYears.map((y) => (
                         <option key={y} value={y}>{y}</option>
                     ))}
                 </select>
@@ -340,7 +364,7 @@ function CarManagementPage() {
           }}>
             {visible.length === 0 && <div style={{gridColumn: '1 / -1', textAlign:'center', padding: '30px'}}>No cars found.</div>}
 
-            {visible.map((c: any) => (
+            {visible.map((c) => (
                 <div key={c.id}
                     onClick={() => openModal('view', c)} /* เพิ่ม onClick ให้การ์ด */
                     style={{
@@ -355,8 +379,8 @@ function CarManagementPage() {
                         transition: 'transform 0.2s',
                         cursor: 'pointer' /* เพิ่ม cursor pointer */
                   }}
-                  onMouseEnter={(e: any) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                  onMouseLeave={(e: any) => e.currentTarget.style.transform = 'translateY(0)'}
+                  onMouseEnter={(e: MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                  onMouseLeave={(e: MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
                     {/* Image */}
                     <div style={{
@@ -379,7 +403,7 @@ function CarManagementPage() {
                             })()}
                             alt={c.model}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            onError={(e: any) => { e.target.src = PLACEHOLDER_CAR; }}
+                            onError={(e: SyntheticEvent<HTMLImageElement>) => { e.currentTarget.src = PLACEHOLDER_CAR; }}
                         />
                     </div>
 
@@ -436,14 +460,14 @@ function CarManagementPage() {
                     }}>
                         <div style={{display:'flex', gap: '8px'}}>
                             {/* เพิ่ม e.stopPropagation() ที่ปุ่มต่างๆ */}
-                            <button onClick={(e: any) => { e.stopPropagation(); openModal('view', c); }} className={styles.iconBtn} title="View"><FaEye /></button>
+                            <button onClick={(e: MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); openModal('view', c); }} className={styles.iconBtn} title="View"><FaEye /></button>
 
                             <HasPermission resource="cars" action="update">
-                                <button onClick={(e: any) => { e.stopPropagation(); openModal('edit', c); }} className={styles.iconBtn} title="Edit"><FaEdit /></button>
+                                <button onClick={(e: MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); openModal('edit', c); }} className={styles.iconBtn} title="Edit"><FaEdit /></button>
                             </HasPermission>
 
                             <HasPermission resource="cars" action="delete">
-                                <button onClick={(e: any) => { e.stopPropagation(); handleDelete(c.id); }} className={`${styles.iconBtn} ${styles.delete}`} title="Delete"><FaTrash /></button>
+                                <button onClick={(e: MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); handleDelete(c.id); }} className={`${styles.iconBtn} ${styles.delete}`} title="Delete"><FaTrash /></button>
                             </HasPermission>
                         </div>
                     </div>
@@ -455,9 +479,9 @@ function CarManagementPage() {
           <div className={styles.footer}>
             <div>Total {total} items</div>
             <div className={styles.pagination}>
-              <button className={styles.pageBtn} onClick={() => setPage((p: any) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+              <button className={styles.pageBtn} onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
               <span style={{margin:'0 8px', fontWeight:600}}>Page {page} / {pageCount}</span>
-              <button className={styles.pageBtn} onClick={() => setPage((p: any) => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>Next</button>
+              <button className={styles.pageBtn} onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>Next</button>
             </div>
           </div>
         </>
@@ -482,12 +506,12 @@ function CarManagementPage() {
                   <select
                     className={styles.formSelect}
                     value={createForm.brand_id}
-                    onChange={(e: any) => setCreateForm((f: any) => ({ ...f, brand_id: e.target.value }))}
+                    onChange={(e: FormFieldEvent) => setCreateForm((f) => ({ ...f, brand_id: e.target.value }))}
                     disabled={modal.mode === 'view'}
                     required
                   >
                     <option value="">-- Select Brand --</option>
-                    {brands.map((b: any) => (
+                    {brands.map((b) => (
                         <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>
                     ))}
                   </select>
@@ -498,7 +522,7 @@ function CarManagementPage() {
                     className={styles.formInput}
                     type="text"
                     value={createForm.model_name}
-                    onChange={(e: any) => setCreateForm((f: any) => ({ ...f, model_name: e.target.value }))}
+                    onChange={(e: FormFieldEvent) => setCreateForm((f) => ({ ...f, model_name: e.target.value }))}
                     disabled={modal.mode === 'view'}
                     required
                     placeholder="e.g. Civic, Vios"
@@ -513,7 +537,7 @@ function CarManagementPage() {
                     className={styles.formInput}
                     type="number"
                     value={createForm.model_year}
-                    onChange={(e: any) => setCreateForm((f: any) => ({ ...f, model_year: e.target.value }))}
+                    onChange={(e: FormFieldEvent) => setCreateForm((f) => ({ ...f, model_year: e.target.value }))}
                     disabled={modal.mode === 'view'}
                     placeholder="e.g. 2024"
                   />
@@ -523,7 +547,7 @@ function CarManagementPage() {
                   <select
                     className={styles.formSelect}
                     value={createForm.car_size}
-                    onChange={(e: any) => setCreateForm((f: any) => ({ ...f, car_size: e.target.value }))}
+                    onChange={(e: FormFieldEvent) => setCreateForm((f) => ({ ...f, car_size: e.target.value }))}
                     disabled={modal.mode === 'view'}
                   >
                     <option value="SEDAN">SEDAN</option>
@@ -543,7 +567,7 @@ function CarManagementPage() {
                     <input
                         type="file"
                         accept="image/*"
-                        onChange={(e: any) => handleImageUpload(e.target.files[0])}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleImageUpload(e.target.files?.[0])}
                         style={{marginBottom: 10, fontSize:'0.9rem'}}
                     />
                 )}
@@ -558,7 +582,7 @@ function CarManagementPage() {
                     }
                     alt="preview"
                     style={{ width: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 8, border: '1px solid #e5e7eb' }}
-                    onError={(e: any) => { e.target.src = PLACEHOLDER_CAR; }}
+                    onError={(e: SyntheticEvent<HTMLImageElement>) => { e.currentTarget.src = PLACEHOLDER_CAR; }}
                   />
                 )}
               </div>

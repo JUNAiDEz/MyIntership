@@ -1,10 +1,72 @@
 import { useState, useMemo } from 'react';
+import type * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaStar, FaTimes, FaSearch } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
 import { API_URL } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
+import type { FormFieldEvent, ModalState } from '@/types';
+
+// --- Local types (โครงสร้างเฉพาะหน้านี้ ตามที่ backend/ฟอร์มใช้จริง) ---
+
+/** รูปใน gallery (เก็บ image_url เป็น URL หรือ Base64) */
+interface GalleryImage {
+  image_url: string;
+}
+
+/** หมวดหมู่บทความ — backend ส่ง field alias ไม่ตายตัว */
+interface BlogCategory {
+  blog_category_id?: number;
+  category_id?: number;
+  id?: number;
+  category_name?: string;
+}
+
+/** บทความ 1 รายการ (หลัง map ใน queryFn + field ดิบจาก backend) */
+interface BlogItem {
+  id?: number;
+  blog_id?: number;
+  title?: string;
+  description?: string;
+  author?: string;
+  published_date?: string;
+  imageUrl?: string;
+  image_url?: string;
+  slug?: string;
+  is_featured?: boolean;
+  is_active?: boolean;
+  categories?: BlogCategory[];
+  category_names?: string;
+  gallery_images?: GalleryImage[];
+}
+
+/** บทความดิบจาก backend (ก่อน map ใน queryFn) */
+interface RawBlog {
+  id?: number;
+  title?: string;
+  description?: string;
+  author?: string;
+  published_at?: string;
+  image_url?: string;
+  slug?: string;
+  is_featured?: boolean;
+  is_published?: boolean;
+  categories?: BlogCategory[];
+}
+
+/** state ของฟอร์ม create/edit */
+interface BlogForm {
+  title: string;
+  slug: string;
+  description: string;
+  cover_image_url: string;
+  published_date: string;
+  is_featured: boolean;
+  is_active: boolean;
+  category_ids: number[];
+  gallery_images: GalleryImage[];
+}
 
 const getToken = () => localStorage.getItem('adminToken');
 
@@ -23,10 +85,10 @@ export default function BlogManagementPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
 
   // --- Modal & Form State ---
-  const [modal, setModal] = useState<any>({ open: false, mode: 'view', blog: null });
+  const [modal, setModal] = useState<ModalState<BlogItem> & { blog: BlogItem | null }>({ open: false, mode: 'view', blog: null });
 
   // Form State
-  const [createForm, setCreateForm] = useState<any>({
+  const [createForm, setCreateForm] = useState<BlogForm>({
     title: '',
     slug: '',
     description: '',
@@ -48,25 +110,25 @@ export default function BlogManagementPage() {
   }), []);
 
   // --- Helper: Convert File to Base64 ---
-  const convertToBase64 = (file: any) => {
+  const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const fileReader = new FileReader();
       fileReader.readAsDataURL(file);
-      fileReader.onload = () => resolve(fileReader.result);
-      fileReader.onerror = (error: any) => reject(error);
+      fileReader.onload = () => resolve(fileReader.result as string);
+      fileReader.onerror = (error) => reject(error);
     });
   };
 
   // --- 1. Fetch Data ---
-  const { data: blogs = [], isLoading: loading } = useQuery({
+  const { data: blogs = [], isLoading: loading } = useQuery<BlogItem[]>({
     queryKey: ['blogs'],
     queryFn: async () => {
       const url = `${API_URL}/api/blog?limit=1000`;
       const res = await fetch(url, { headers });
       if (!res.ok) throw new Error('Failed to fetch blogs');
-      const result = await res.json();
+      const result = await res.json() as { success?: boolean; data?: RawBlog[] };
       if (result.success && result.data) {
-        return result.data.map((blog: any) => ({
+        return result.data.map((blog): BlogItem => ({
           id: blog.id,
           title: blog.title,
           description: blog.description || '',
@@ -77,26 +139,26 @@ export default function BlogManagementPage() {
           is_featured: !!blog.is_featured,
           is_active: !!blog.is_published,
           categories: blog.categories || [],
-          category_names: blog.categories?.map((c: any) => c.category_name).join(', ') || '-'
+          category_names: blog.categories?.map((c) => c.category_name).join(', ') || '-'
         }));
       }
       return [];
     },
   });
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<BlogCategory[]>({
     queryKey: ['blog-categories'],
     queryFn: async () => {
       const catRes = await fetch(`${API_URL}/api/blog/categories`, { headers });
       if (!catRes.ok) throw new Error('Failed to fetch categories');
-      const catData = await catRes.json();
+      const catData = await catRes.json() as BlogCategory[] | { data?: BlogCategory[] };
       return Array.isArray(catData) ? catData : catData.data || [];
     },
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['blogs'] });
 
-  function slugify(title: any, id: any) {
+  function slugify(title: string | undefined, id: number | undefined) {
     return (
       title?.toString()
         .toLowerCase()
@@ -108,10 +170,10 @@ export default function BlogManagementPage() {
   }
 
     // --- 2. Filter & Pagination Logic ---
-    const filteredBlogs = blogs.filter((b: any) => {
+    const filteredBlogs = blogs.filter((b) => {
       let catOk = true;
       if (categoryFilter) {
-        catOk = b.categories?.some((c: any) => (c.blog_category_id || c.category_id) === Number(categoryFilter));
+        catOk = !!b.categories?.some((c) => (c.blog_category_id || c.category_id) === Number(categoryFilter));
       }
       return catOk;
     });
@@ -123,13 +185,13 @@ export default function BlogManagementPage() {
   // --- 3. Actions (Modified for Base64) ---
 
   // จัดการรูปปก (Cover Image) เป็น Base64
-  const handleImageUpload = async (file: any) => {
+  const handleImageUpload = async (file: File | undefined) => {
     if (!file) return;
     setUploadingImage(true);
     try {
       const base64 = await convertToBase64(file);
       // set เข้า state โดยตรง
-      setCreateForm((prev: any) => ({ ...prev, cover_image_url: base64 }));
+      setCreateForm((prev) => ({ ...prev, cover_image_url: base64 }));
     } catch (err) {
       console.error(err);
       alert('Error converting image to Base64');
@@ -139,20 +201,20 @@ export default function BlogManagementPage() {
   };
 
   // จัดการรูป Gallery (Multiple) เป็น Base64
-  const handleGalleryUpload = async (files: any) => {
+  const handleGalleryUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     // แปลง FileList เป็น Array เพื่อ map
     const fileArray = Array.from(files);
 
     try {
-        const base64Promises = fileArray.map((file: any) => convertToBase64(file));
+        const base64Promises = fileArray.map((file) => convertToBase64(file));
         const base64Results = await Promise.all(base64Promises);
 
         // สร้าง structure ให้เหมือนเดิม ({ image_url: '...' })
-        const newImages = base64Results.map((b64: any) => ({ image_url: b64 }));
+        const newImages: GalleryImage[] = base64Results.map((b64) => ({ image_url: b64 }));
 
-        setCreateForm((prev: any) => ({
+        setCreateForm((prev) => ({
             ...prev,
             gallery_images: [...prev.gallery_images, ...newImages]
         }));
@@ -164,20 +226,20 @@ export default function BlogManagementPage() {
   };
 
   // ลบรูปจาก Gallery
-  const handleRemoveGalleryImage = (indexToRemove: any) => {
-    setCreateForm((prev: any) => ({
+  const handleRemoveGalleryImage = (indexToRemove: number) => {
+    setCreateForm((prev) => ({
         ...prev,
-        gallery_images: prev.gallery_images.filter((_: any, index: number) => index !== indexToRemove)
+        gallery_images: prev.gallery_images.filter((_, index) => index !== indexToRemove)
     }));
   };
 
-  const handleCategoryToggle = (id: any) => {
-    setCreateForm((prev: any) => {
+  const handleCategoryToggle = (id: number) => {
+    setCreateForm((prev) => {
       const exists = prev.category_ids.includes(id);
       return {
         ...prev,
         category_ids: exists
-          ? prev.category_ids.filter((c: any) => c !== id)
+          ? prev.category_ids.filter((c) => c !== id)
           : [...prev.category_ids, id]
       };
     });
@@ -213,26 +275,26 @@ export default function BlogManagementPage() {
       });
 
       if (!res.ok) {
-         const errData = await res.json();
+         const errData = await res.json() as { message?: string };
          throw new Error(errData.message || 'Save failed');
       }
       return res.json();
     },
     onSuccess: () => { refresh(); closeModal(); },
-    onError: (err: any) => setCreateError(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => setCreateError(err instanceof Error ? err.message : String(err)),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => {
+    mutationFn: async (id: number) => {
       const res = await fetch(`${API_URL}/api/blogs/${id}`, { method: 'DELETE', headers });
       if(!res.ok) throw new Error('Delete failed');
       return res.json();
     },
     onSuccess: refresh,
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCreateError('');
     if (!createForm.title || createForm.title.trim() === "") {
@@ -242,13 +304,13 @@ export default function BlogManagementPage() {
     saveMutation.mutate();
   };
 
-  const handleDelete = (id: any) => {
+  const handleDelete = (id: number) => {
     if (!window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบทความนี้?')) return;
     deleteMutation.mutate(id);
   };
 
   // --- 4. Modal Helper ---
-  const openModal = (mode: any, item: any = null) => {
+  const openModal = (mode: ModalState['mode'], item: BlogItem | null = null) => {
     if (mode === 'create') {
       setCreateForm({
         title: '',
@@ -270,7 +332,7 @@ export default function BlogManagementPage() {
         published_date: item.published_date ? item.published_date.split('T')[0] : '',
         is_featured: !!item.is_featured,
         is_active: typeof item.is_active !== 'undefined' ? item.is_active : true,
-        category_ids: item.categories?.map((c: any) => c.blog_category_id || c.category_id) || [],
+        category_ids: item.categories?.map((c) => (c.blog_category_id || c.category_id) as number) || [],
         gallery_images: item.gallery_images || []
       });
     }
@@ -305,7 +367,7 @@ export default function BlogManagementPage() {
                     className={styles.searchInput}
                     placeholder="Search Projects..."
                     value={search}
-                    onChange={(e: any) => { setSearch(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setSearch(e.target.value); setPage(1); }}
                 />
             </div>
 
@@ -315,11 +377,11 @@ export default function BlogManagementPage() {
               <select
                 className={styles.filterSelect}
                 value={categoryFilter}
-                onChange={(e: any) => { setCategoryFilter(e.target.value); setPage(1); }}
+                onChange={(e: FormFieldEvent) => { setCategoryFilter(e.target.value); setPage(1); }}
                 style={{ margin: 0, minWidth: '160px' }}
               >
                 <option value="">ทั้งหมด</option>
-                {categories.map((cat: any) => (
+                {categories.map((cat) => (
                   <option key={cat.blog_category_id || cat.id} value={cat.blog_category_id || cat.id}>
                     {cat.category_name}
                   </option>
@@ -342,7 +404,7 @@ export default function BlogManagementPage() {
           }}>
             {visible.length === 0 && <div style={{gridColumn: '1 / -1', textAlign:'center', padding: '30px'}}>ไม่พบข้อมูลบทความ</div>}
 
-            {visible.map((b: any) => (
+            {visible.map((b) => (
               <div key={b.blog_id || b.id}
                 onClick={() => openModal('view', b)}
                     style={{
@@ -357,8 +419,8 @@ export default function BlogManagementPage() {
                         transition: 'transform 0.2s',
                         cursor: 'pointer'
                   }}
-                  onMouseEnter={(e: any) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                  onMouseLeave={(e: any) => e.currentTarget.style.transform = 'translateY(0)'}
+                  onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                  onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
                     {/* Status Badge */}
                   <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2 }}>
@@ -434,12 +496,12 @@ export default function BlogManagementPage() {
                         gap: '8px',
                         background: '#fafafa'
                     }}>
-                        <button onClick={(e: any) => { e.stopPropagation(); openModal('view', b); }} className={styles.iconBtn} title="ดูรายละเอียด"><FaEye /></button>
+                        <button onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); openModal('view', b); }} className={styles.iconBtn} title="ดูรายละเอียด"><FaEye /></button>
                         <HasPermission resource="blog" action="update">
-                          <button onClick={(e: any) => { e.stopPropagation(); openModal('edit', b); }} className={styles.iconBtn} title="แก้ไข"><FaEdit /></button>
+                          <button onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); openModal('edit', b); }} className={styles.iconBtn} title="แก้ไข"><FaEdit /></button>
                         </HasPermission>
                         <HasPermission resource="blog" action="delete">
-                          <button onClick={(e: any) => { e.stopPropagation(); handleDelete(b.blog_id || b.id); }} className={`${styles.iconBtn} ${styles.delete}`} title="ลบ"><FaTrash /></button>
+                          <button onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); handleDelete((b.blog_id || b.id) as number); }} className={`${styles.iconBtn} ${styles.delete}`} title="ลบ"><FaTrash /></button>
                         </HasPermission>
                     </div>
                 </div>
@@ -450,9 +512,9 @@ export default function BlogManagementPage() {
           <div className={styles.footer}>
             <div>Total {total} items</div>
             <div className={styles.pagination}>
-              <button className={styles.pageBtn} onClick={() => setPage((p: any) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+              <button className={styles.pageBtn} onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
               <span style={{margin:'0 8px', fontWeight:600}}>Page {page} / {pageCount}</span>
-              <button className={styles.pageBtn} onClick={() => setPage((p: any) => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>Next</button>
+              <button className={styles.pageBtn} onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>Next</button>
             </div>
           </div>
         </>
@@ -480,7 +542,7 @@ export default function BlogManagementPage() {
                       <label className={styles.formLabel}>Project Title *</label>
                       <input
                         className={styles.formInput} type="text" value={createForm.title} required disabled={modal.mode === 'view'}
-                        onChange={(e: any) => setCreateForm({...createForm, title: e.target.value})}
+                        onChange={(e: FormFieldEvent) => setCreateForm({...createForm, title: e.target.value})}
                       />
                     </div>
                     <div className={styles.formGroup}>
@@ -490,7 +552,7 @@ export default function BlogManagementPage() {
                         type="text"
                         value={createForm.slug}
                         disabled={modal.mode === 'view'}
-                        onChange={(e: any) => setCreateForm({ ...createForm, slug: e.target.value.replace(/[^a-z0-9-]/g, '') })}
+                        onChange={(e: FormFieldEvent) => setCreateForm({ ...createForm, slug: e.target.value.replace(/[^a-z0-9-]/g, '') })}
                         placeholder="e.g. my-portfolio-project"
                       />
                     </div>
@@ -498,12 +560,12 @@ export default function BlogManagementPage() {
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Categories</label>
                         <div style={{ border: '1px solid #d1d5db', padding: 10, borderRadius: 6, maxHeight: 150, overflowY: 'auto', background: modal.mode==='view'?'#f9f9f9':'#fff' }}>
-                          {categories.map((cat: any) => (
+                          {categories.map((cat) => (
                             <label key={cat.blog_category_id || cat.id} style={{display:'flex', alignItems:'center', gap:8, marginBottom:5, cursor: modal.mode==='view'?'default':'pointer'}}>
                               <input
                                   type="checkbox"
-                                  checked={createForm.category_ids.includes(cat.blog_category_id || cat.id)}
-                                  onChange={() => handleCategoryToggle(cat.blog_category_id || cat.id)}
+                                  checked={createForm.category_ids.includes((cat.blog_category_id || cat.id) as number)}
+                                  onChange={() => handleCategoryToggle((cat.blog_category_id || cat.id) as number)}
                                   disabled={modal.mode === 'view'}
                               />
                               <span style={{fontSize:'0.9rem'}}>{cat.category_name}</span>
@@ -516,7 +578,7 @@ export default function BlogManagementPage() {
                         <label style={{display:'flex', alignItems:'center', gap:5, cursor:'pointer'}}>
                             <input
                                 type="checkbox" checked={createForm.is_featured}
-                                onChange={(e: any) => setCreateForm({...createForm, is_featured: e.target.checked})}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateForm({...createForm, is_featured: e.target.checked})}
                                 disabled={modal.mode === 'view'}
                             />
                             <span style={{fontSize:'0.9rem'}}>Featured Project</span>
@@ -524,7 +586,7 @@ export default function BlogManagementPage() {
                         <label style={{display:'flex', alignItems:'center', gap:5, cursor:'pointer'}}>
                             <input
                                 type="checkbox" checked={createForm.is_active}
-                                onChange={(e: any) => setCreateForm({...createForm, is_active: e.target.checked})}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateForm({...createForm, is_active: e.target.checked})}
                                 disabled={modal.mode === 'view'}
                             />
                             <span style={{fontSize:'0.9rem'}}>Active (Show)</span>
@@ -537,7 +599,7 @@ export default function BlogManagementPage() {
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Cover Image</label>
                         {modal.mode !== 'view' && (
-                            <input type="file" accept="image/*" onChange={(e: any) => handleImageUpload(e.target.files[0])} disabled={uploadingImage} style={{marginBottom:5, fontSize:'0.85rem'}} />
+                            <input type="file" accept="image/*" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e.target.files?.[0])} disabled={uploadingImage} style={{marginBottom:5, fontSize:'0.85rem'}} />
                         )}
                         {createForm.cover_image_url && (
                             <img
@@ -555,12 +617,12 @@ export default function BlogManagementPage() {
                                 <label className={styles.btnCancel} style={{padding:'6px 12px', fontSize:'0.8rem', cursor:'pointer', display:'inline-block'}}>
                                     <FaPlus /> Upload More
                                     {/* แก้ไขให้ส่ง e.target.files ไปยังฟังก์ชันจัดการหลายไฟล์ */}
-                                    <input type="file" accept="image/*" multiple onChange={(e: any) => handleGalleryUpload(e.target.files)} style={{display:'none'}} />
+                                    <input type="file" accept="image/*" multiple onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleGalleryUpload(e.target.files)} style={{display:'none'}} />
                                 </label>
                             </div>
                         )}
                         <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fill, minmax(70px, 1fr))', gap: 8, border:'1px solid #e5e7eb', padding:10, borderRadius:6, maxHeight:200, overflowY:'auto' }}>
-                            {createForm.gallery_images.map((img: any, idx: number) => (
+                            {createForm.gallery_images.map((img, idx: number) => (
                                 <div key={idx} style={{ position: 'relative', height: 70 }}>
                                     <img
                                             src={img.image_url.startsWith('http') || img.image_url.startsWith('data:') ? img.image_url : `${API_URL}${img.image_url}`}
@@ -584,7 +646,7 @@ export default function BlogManagementPage() {
                         <textarea
                             className={styles.formTextarea} rows={4}
                             value={createForm.description}
-                            onChange={(e: any) => setCreateForm({...createForm, description: e.target.value})}
+                            onChange={(e: FormFieldEvent) => setCreateForm({...createForm, description: e.target.value})}
                             disabled={modal.mode === 'view'}
                         />
                     </div>

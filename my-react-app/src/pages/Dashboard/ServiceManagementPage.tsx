@@ -8,9 +8,54 @@ import {
 import useDebounce from '../../hooks/useDebounce';
 import { API_URL } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
+import type { FormFieldEvent } from '@/types';
 
 // Helper ดึง Token
 const getToken = () => localStorage.getItem('adminToken');
+
+// --- Local types (ตาม field จริงที่หน้านี้ใช้) ---
+
+/** หมวดหมู่บริการแบบ normalize แล้ว (ใช้ใน dropdown) */
+interface CategoryOption {
+  id: number;
+  name: string;
+}
+
+/** หนึ่งรายการบริการแบบ normalize แล้ว (จาก queryFn ของ services) */
+interface ServiceItem {
+  id: number;
+  title: string;
+  price: number;
+  discount_percent: number;
+  usage_count: number;
+  imageUrl: string;
+  is_active: boolean;
+  is_popular: boolean;
+  category_id?: number;
+  category_name: string;
+  /** raw object ดิบจาก backend (โครงสร้างไม่ตายตัว) */
+  raw: Record<string, unknown>;
+}
+
+/** state ของ form สำหรับสร้าง/แก้ไขบริการ */
+interface ServiceForm {
+  service_name: string;
+  slug: string;
+  price: string | number;
+  discount_percent: string | number;
+  category_id: string | number;
+  image_url: string;
+  description: string;
+  is_active: boolean;
+  is_popular: boolean;
+}
+
+/** state ของ modal บริการ (ใช้ ServiceItem เป็น item) */
+interface ServiceModalState {
+  open: boolean;
+  mode: 'create' | 'edit' | 'view';
+  service: ServiceItem | null;
+}
 
 function ServiceManagementPage() {
     const queryClient = useQueryClient();
@@ -35,10 +80,10 @@ function ServiceManagementPage() {
         setAddCatModal(false);
         queryClient.invalidateQueries({ queryKey: ['service-categories'] });
       },
-      onError: (err: any) => setAddCatError(err instanceof Error ? err.message : String(err)),
+      onError: (err: unknown) => setAddCatError(err instanceof Error ? err.message : String(err)),
     });
 
-    const handleAddCategory = (e: any) => {
+    const handleAddCategory = (e: React.FormEvent) => {
       e.preventDefault();
       if (!newCategoryName.trim()) return;
       setAddCatError('');
@@ -57,10 +102,10 @@ function ServiceManagementPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
 
   // --- Modal & Form State ---
-  const [modal, setModal] = useState<any>({ open: false, mode: 'view', service: null });
+  const [modal, setModal] = useState<ServiceModalState>({ open: false, mode: 'view', service: null });
 
   // Form State
-  const [createForm, setCreateForm] = useState<any>({
+  const [createForm, setCreateForm] = useState<ServiceForm>({
     service_name: '',
     slug: '',
     price: '',            // map to base_labor_cost
@@ -72,35 +117,38 @@ function ServiceManagementPage() {
     is_popular: false
   });
 
-  const [imageFile, setImageFile] = useState<any>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState('');
   const [createError, setCreateError] = useState('');
 
   // --- Headers Helper ---
   const headers = useMemo(() => {
-    const h: any = { 'Content-Type': 'application/json' };
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) h.Authorization = `Bearer ${token}`;
     return h;
   }, []);
 
   // --- 2. Fetch Categories Dropdown ---
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<CategoryOption[]>({
     queryKey: ['service-categories'],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/services/categories`, { headers });
       if (!res.ok) return [];
-      const data = await res.json();
-      return (Array.isArray(data) ? data : data.items || []).map((c: any) => ({
-        id: c.category_id || c.id,
-        name: c.category_name || c.name
+      const data: unknown = await res.json();
+      const rows: Record<string, unknown>[] = Array.isArray(data)
+        ? data
+        : ((data as { items?: Record<string, unknown>[] })?.items || []);
+      return rows.map((c) => ({
+        id: Number(c.category_id ?? c.id),
+        name: String(c.category_name ?? c.name ?? '')
       }));
     },
   });
 
   // --- 1. Fetch Services ---
-  const { data: services = [], isLoading: loading, error: queryError } = useQuery({
+  const { data: services = [], isLoading: loading, error: queryError } = useQuery<ServiceItem[]>({
     queryKey: ['services', debouncedSearch, categories],
     queryFn: async () => {
       const qParams = new URLSearchParams();
@@ -113,29 +161,35 @@ function ServiceManagementPage() {
         const text = await res.text();
         throw new Error(text || 'Failed to fetch services');
       }
-      const data = await res.json();
+      const data: unknown = await res.json();
 
       // Normalize Data
-      const items = Array.isArray(data) ? data : data.items || [];
-      return items.map((s: any) => ({
-        id: s.service_id || s.id,
-        title: s.service_name || s.title || 'Untitled',
-        price: s.base_labor_cost ? Number(s.base_labor_cost) : (Number(s.price) || 0),
-        discount_percent: Number(s.discount_percent) || 0,
-        usage_count: s.usage_count || 0,
-        imageUrl: (s.images && s.images[0] && (s.images[0].image_url || s.images[0].url)) || '',
-        is_active: typeof s.is_active !== 'undefined' ? s.is_active : true,
-        is_popular: typeof s.is_popular !== 'undefined' ? s.is_popular : false,
-        category_id: s.category_id,
-        category_name: categories.find((c: any) => c.id === s.category_id)?.name || '-',
-        raw: s
-      }));
+      const items: Record<string, unknown>[] = Array.isArray(data)
+        ? data
+        : ((data as { items?: Record<string, unknown>[] })?.items || []);
+      return items.map((s) => {
+        const images = s.images as Array<{ image_url?: string; url?: string }> | undefined;
+        const categoryId = s.category_id != null ? Number(s.category_id) : undefined;
+        return {
+          id: Number(s.service_id ?? s.id),
+          title: String(s.service_name ?? s.title ?? 'Untitled'),
+          price: s.base_labor_cost ? Number(s.base_labor_cost) : (Number(s.price) || 0),
+          discount_percent: Number(s.discount_percent) || 0,
+          usage_count: Number(s.usage_count) || 0,
+          imageUrl: (images?.[0] && (images[0].image_url || images[0].url)) || '',
+          is_active: typeof s.is_active !== 'undefined' ? Boolean(s.is_active) : true,
+          is_popular: typeof s.is_popular !== 'undefined' ? Boolean(s.is_popular) : false,
+          category_id: categoryId,
+          category_name: categories.find((c) => c.id === categoryId)?.name || '-',
+          raw: s
+        };
+      });
     },
   });
   const error = queryError ? (queryError instanceof Error ? queryError.message : String(queryError)) : '';
 
   // --- 3. Pagination & Filtering ---
-  const filteredServices = services.filter((s: any) => {
+  const filteredServices = services.filter((s) => {
       if (categoryFilter) return (Number(s.category_id) === Number(categoryFilter));
       return true;
   });
@@ -146,7 +200,7 @@ function ServiceManagementPage() {
 
   // --- 4. Actions ---
 
-  const handleImageUpload = async (file: any) => {
+  const handleImageUpload = async (file: File | undefined) => {
     if (!file) return;
     setImageFile(file);
     setImageUploadError('');
@@ -159,10 +213,10 @@ function ServiceManagementPage() {
         headers: { 'Authorization': `Bearer ${getToken()}` },
         body: fd
       });
-      const data = await res.json();
+      const data: { url?: string; image_url?: string; message?: string; error?: string } = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || 'Upload failed');
 
-      setCreateForm((f: any) => ({ ...f, image_url: data.url || data.image_url }));
+      setCreateForm((f) => ({ ...f, image_url: data.url || data.image_url || '' }));
     } catch (err) {
       console.error('Upload error', err);
       setImageUploadError((err instanceof Error ? err.message : String(err)) || 'Upload failed');
@@ -201,8 +255,8 @@ function ServiceManagementPage() {
 
       if (!res.ok) {
         let errText = '';
-        try { errText = await res.text(); } catch (e) {}
-        try { const j = JSON.parse(errText); errText = j.message || j.error || errText; } catch (e) {}
+        try { errText = await res.text(); } catch { /* ignore */ }
+        try { const j = JSON.parse(errText); errText = j.message || j.error || errText; } catch { /* ignore */ }
         throw new Error(errText || 'Save failed');
       }
       return res.json();
@@ -211,34 +265,34 @@ function ServiceManagementPage() {
       setModal({ open: false, mode: 'view', service: null });
       queryClient.invalidateQueries({ queryKey: ['services'] });
     },
-    onError: (err: any) => setCreateError((err instanceof Error ? err.message : String(err)) || 'Error saving service'),
+    onError: (err: unknown) => setCreateError((err instanceof Error ? err.message : String(err)) || 'Error saving service'),
   });
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError('');
     saveMutation.mutate();
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => {
+    mutationFn: async (id: number) => {
       const res = await fetch(`${API_URL}/api/services/${id}/hard`, { method: 'DELETE', headers });
       if (!res.ok) throw new Error('Failed to delete service.');
       return res.json().catch(() => ({}));
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['services'] }),
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
-  const handleDelete = (id: any) => {
+  const handleDelete = (id: number) => {
     if (!window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบริการนี้?')) return;
     deleteMutation.mutate(id);
   };
 
   // --- 5. Modal Control ---
-  const openModal = (mode: any, service: any = null) => {
+  const openModal = (mode: ServiceModalState['mode'], service: ServiceItem | null = null) => {
     if ((mode === 'edit' || mode === 'view') && service) {
-      const s = service.raw;
+      const s = service.raw as Record<string, any>;
       setCreateForm({
         service_name: s.service_name || s.title || '',
         slug: s.slug || '', // FIXME: ใส่ค่าว่างป้องกัน undefined
@@ -263,16 +317,16 @@ function ServiceManagementPage() {
   };
 
   // Helper สำหรับเปลี่ยนค่า Form
-  const handleInputChange = (e: any) => {
+  const handleInputChange = (e: FormFieldEvent) => {
     const { name, value } = e.target;
     if (name === 'is_active' || name === 'is_popular') {
-        setCreateForm((prev: any) => ({ ...prev, [name]: value === 'true' }));
+        setCreateForm((prev) => ({ ...prev, [name]: value === 'true' }));
     } else {
-        setCreateForm((prev: any) => ({ ...prev, [name]: value }));
+        setCreateForm((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const getCategoryName = (id: any) => categories.find((c: any) => c.id === Number(id))?.name || '-';
+  const getCategoryName = (id: number | string) => categories.find((c) => c.id === Number(id))?.name || '-';
 
   // --- RENDER ---
   return (
@@ -298,7 +352,7 @@ function ServiceManagementPage() {
                     className={styles.searchInput}
                     placeholder="Search Service..."
                     value={search}
-                    onChange={(e: any) => { setSearch(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setSearch(e.target.value); setPage(1); }}
                 />
             </div>
 
@@ -309,14 +363,14 @@ function ServiceManagementPage() {
                 <select
                   className={styles.filterSelect}
                   value={categoryFilter}
-                  onChange={(e: any) => { setCategoryFilter(e.target.value); setPage(1); }}
+                  onChange={(e: FormFieldEvent) => { setCategoryFilter(e.target.value); setPage(1); }}
                   style={{ margin: 0, minWidth: '160px' }}
                 >
                   <option value="">ทั้งหมด</option>
                   {categories.length === 0 ? (
                     <option disabled>ไม่มีหมวดหมู่</option>
                   ) : (
-                    categories.map((cat: any) => (
+                    categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))
                   )}
@@ -332,7 +386,7 @@ function ServiceManagementPage() {
                   <div style={{ background: '#fff', borderRadius: 10, padding: 30, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}>
                     <h3 style={{ margin: 0, marginBottom: 15, fontWeight: 700, fontSize: 18 }}>เพิ่มหมวดหมู่ใหม่</h3>
                     <form onSubmit={handleAddCategory}>
-                      <input type="text" value={newCategoryName} onChange={(e: any) => setNewCategoryName(e.target.value)} placeholder="ชื่อหมวดหมู่" style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginBottom: 12 }} autoFocus />
+                      <input type="text" value={newCategoryName} onChange={(e: FormFieldEvent) => setNewCategoryName(e.target.value)} placeholder="ชื่อหมวดหมู่" style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginBottom: 12 }} autoFocus />
                       {addCatError && <div style={{ color: 'red', fontSize: 13, marginBottom: 8 }}>{addCatError}</div>}
                       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                         <button type="button" onClick={() => setAddCatModal(false)} style={{ padding: '7px 18px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', color: '#333', fontWeight: 'bold', cursor: 'pointer' }}>ยกเลิก</button>
@@ -360,7 +414,7 @@ function ServiceManagementPage() {
           }}>
             {visible.length === 0 && <div style={{gridColumn: '1 / -1', textAlign:'center', padding: '30px'}}>No services found.</div>}
 
-            {visible.map((s: any) => (
+            {visible.map((s) => (
                 <div key={s.id}
                     style={{
                         background: '#fff',
@@ -375,8 +429,8 @@ function ServiceManagementPage() {
                         position: 'relative'
                     }}
                     onClick={() => openModal('view', s)}
-                    onMouseEnter={(e: any) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                    onMouseLeave={(e: any) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                    onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
                     {/* Status Badge */}
                     <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2 }}>
@@ -432,9 +486,9 @@ function ServiceManagementPage() {
           <div className={styles.footer}>
             <div>Total {total} items</div>
             <div className={styles.pagination}>
-              <button onClick={() => setPage((p: any) => Math.max(1, p - 1))} disabled={page <= 1} className={styles.pageBtn}>Prev</button>
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className={styles.pageBtn}>Prev</button>
               <span style={{margin:'0 8px', fontWeight:600}}>Page {page} / {pageCount}</span>
-              <button onClick={() => setPage((p: any) => Math.min(pageCount, p + 1))} disabled={page >= pageCount} className={styles.pageBtn}>Next</button>
+              <button onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={page >= pageCount} className={styles.pageBtn}>Next</button>
             </div>
           </div>
         </>
@@ -463,20 +517,32 @@ function ServiceManagementPage() {
 }
 
 // --- NEW UNIFIED COMPONENT: ServiceDetailModal ---
+interface ServiceDetailModalProps {
+    modal: ServiceModalState;
+    setModal: React.Dispatch<React.SetStateAction<ServiceModalState>>;
+    createForm: ServiceForm;
+    handleInputChange: (e: FormFieldEvent) => void;
+    handleSubmit: (e: React.FormEvent) => void;
+    handleImageUpload: (file: File | undefined) => void;
+    uploadingImage: boolean;
+    categories: CategoryOption[];
+    PLACEHOLDER_60: string;
+    API_URL: string;
+    createLoading: boolean;
+    createError: string;
+    handleDelete: (id: number) => void;
+}
+
 function ServiceDetailModal({
     modal, setModal, createForm, handleInputChange, handleSubmit,
     handleImageUpload, uploadingImage, categories,
     PLACEHOLDER_60, API_URL, createLoading, createError, handleDelete
-}: {
-    modal?: any; setModal?: any; createForm?: any; handleInputChange?: any; handleSubmit?: any;
-    handleImageUpload?: any; uploadingImage?: any; categories?: any;
-    PLACEHOLDER_60?: any; API_URL?: any; createLoading?: any; createError?: any; handleDelete?: any;
-}) {
+}: ServiceDetailModalProps) {
     const [tab, setTab] = useState('info');
     const isEditing = modal.mode === 'edit' || modal.mode === 'create';
 
     // Styles match ProductDetailModal
-    const inputStyle: any = {
+    const inputStyle: React.CSSProperties = {
         width: '100%',
         padding: '10px 12px',
         borderRadius: '8px',
@@ -488,11 +554,11 @@ function ServiceDetailModal({
         boxSizing: 'border-box',
         height: '42px'
     };
-    const labelStyle: any = { display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#6b7280', marginBottom: '6px', textTransform: 'uppercase' };
-    const textareaStyle: any = { ...inputStyle, height: 'auto', minHeight: '80px' };
+    const labelStyle: React.CSSProperties = { display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#6b7280', marginBottom: '6px', textTransform: 'uppercase' };
+    const textareaStyle: React.CSSProperties = { ...inputStyle, height: 'auto', minHeight: '80px' };
 
     return (
-        <div className={styles.modalBackdrop} style={{ backdropFilter: 'blur(5px)' }} onClick={(e: any) => { if(e.target === e.currentTarget) setModal({...modal, open: false}); }}>
+        <div className={styles.modalBackdrop} style={{ backdropFilter: 'blur(5px)' }} onClick={(e: React.MouseEvent<HTMLDivElement>) => { if(e.target === e.currentTarget) setModal({...modal, open: false}); }}>
             <div style={{
                 background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '600px',
                 overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', animation: 'fadeInUp 0.3s ease-out',
@@ -539,7 +605,7 @@ function ServiceDetailModal({
                                         <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10 }}>
                                             <label style={{ background: '#fff', padding: '6px 12px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: 5 }}>
                                                 <FaCamera /> เปลี่ยนรูป
-                                                <input type="file" onChange={(e: any) => handleImageUpload(e.target.files[0])} style={{ display: 'none' }} />
+                                                <input type="file" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e.target.files?.[0])} style={{ display: 'none' }} />
                                             </label>
                                         </div>
                                     )}
@@ -565,7 +631,7 @@ function ServiceDetailModal({
                                         <label style={labelStyle}>หมวดหมู่</label>
                                         <select style={inputStyle} name="category_id" value={createForm.category_id || ''} onChange={handleInputChange}>
                                             <option value="">เลือกหมวดหมู่</option>
-                                            {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select>
                                     </div>
                                     <div>
@@ -606,7 +672,7 @@ function ServiceDetailModal({
                             {/* Footer Buttons */}
                             <div style={{ marginTop: 25, paddingTop: 20, borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                                 {modal.mode === 'edit' && (
-                                     <button type="button" onClick={() => { if(window.confirm('ยืนยันลบ?')) { handleDelete(modal.service.id); setModal({...modal, open:false}); } }} style={{ padding: '10px', color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>
+                                     <button type="button" onClick={() => { if(modal.service && window.confirm('ยืนยันลบ?')) { handleDelete(modal.service.id); setModal({...modal, open:false}); } }} style={{ padding: '10px', color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>
                                         <FaTrash /> ลบ
                                      </button>
                                 )}

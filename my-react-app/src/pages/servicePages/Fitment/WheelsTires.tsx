@@ -56,15 +56,15 @@ function WheelsTires({ onLogout }: { onLogout?: () => void }) {
   // Transform API data to match UI
   const pricingData = useMemo(() => {
     if (!Array.isArray(dbData) || dbData.length === 0) return [];
-    return dbData.map((brandGroup: any) => ({
+    return dbData.map((brandGroup: ServicePricingGroup) => ({
       brand: brandGroup.brand,
-      models: (brandGroup.models || []).map((model: any) => ({ ...model }))
+      models: (brandGroup.models || []).map((model: ServiceModel) => ({ ...model }))
     }));
   }, [dbData]);
 
   const allServicePackages = useMemo(() => {
-    return pricingData.flatMap((brandGroup: any) =>
-      brandGroup.models.map((model: any) => ({
+    return pricingData.flatMap((brandGroup: ServicePricingGroup) =>
+      brandGroup.models.map((model: ServiceModel) => ({
         ...model,
         brand: brandGroup.brand,
         image_url: model.image_url || model.img || ''
@@ -74,7 +74,7 @@ function WheelsTires({ onLogout }: { onLogout?: () => void }) {
   if (loadingPricing) return <div className={styles.pageContainer}><Header onLogout={onLogout} /><main className={styles.mainContent}><div style={{ textAlign: 'center', padding: '100px 20px', color: '#ffc709' }}><h2>กำลังโหลดข้อมูล...</h2></div></main><Footer /></div>;
   if (errorPricing) return <div className={styles.pageContainer}><Header onLogout={onLogout} /><main className={styles.mainContent}><div style={{ textAlign: 'center', padding: '100px 20px', color: 'red' }}><h2>ไม่สามารถโหลดข้อมูลราคาได้</h2></div></main><Footer /></div>;
 
-  const handleOpenPopup = (item: any) => { setModalData(item); setShowModal(true); };
+  const handleOpenPopup = (item: ServiceModel) => { setModalData(item); setShowModal(true); };
 
   const heroImage = 'https://images.unsplash.com/photo-1578844251758-2f71da645217?q=80&w=1600&auto=format&fit=crop';
   const pageUrl = typeof window !== 'undefined' ? window.location.href : 'https://front.gt7dev.com/services/fitment/wheels-tires';
@@ -82,7 +82,7 @@ function WheelsTires({ onLogout }: { onLogout?: () => void }) {
   const description = 'บริการล้อแม็กซ์ ยางรถยนต์ คุณภาพ พร้อมถ่วงล้อและตั้งศูนย์ ราคามาตรฐาน พร้อมรีวิวจริงจากลูกค้า';
   const mainImage = heroImage;
 
-  const prices = allServicePackages.map((p: any) => {
+  const prices = allServicePackages.map((p: ServiceModel) => {
     const digits = String(p.tire || p.fullSet || '').replace(/[^0-9]/g, '');
     return digits ? Number(digits) : null;
   }).filter((n: number | null): n is number => n !== null);
@@ -119,7 +119,7 @@ function WheelsTires({ onLogout }: { onLogout?: () => void }) {
           subtitle="ยางคุณภาพ ล้อแม็กซ์สวย พร้อมบริการถ่วงล้อและตั้งศูนย์ครบวงจร" 
         />
 
-        <PriceSelector pricingData={pricingData} />
+        <PriceSelector pricingData={pricingData as React.ComponentProps<typeof PriceSelector>['pricingData']} />
 
         <section className={styles.relatedServices}>
           <div className="container">
@@ -143,8 +143,8 @@ function WheelsTires({ onLogout }: { onLogout?: () => void }) {
         </section>
 
         <ServiceCatalog 
-          allPackages={allServicePackages} 
-          onOpenModal={handleOpenPopup} 
+          allPackages={allServicePackages}
+          onOpenModal={handleOpenPopup as React.ComponentProps<typeof ServiceCatalog>['onOpenModal']}
         />
 
         <ReviewGallery reviewItems={reviewItems} />

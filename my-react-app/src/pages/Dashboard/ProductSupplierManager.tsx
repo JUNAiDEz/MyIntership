@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { FormFieldEvent } from '@/types';
 // [CHANGE] Use Global Theme
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaSave, FaPlus, FaTimes, FaBuilding, FaPhone, FaUser, FaSearch } from 'react-icons/fa';
@@ -7,26 +8,71 @@ import { FaEdit, FaSave, FaPlus, FaTimes, FaBuilding, FaPhone, FaUser, FaSearch 
 // API Environment Variable
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+/** Supplier (ผู้จัดจำหน่าย) */
+interface Supplier {
+  supplier_id: number;
+  supplier_name: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  [key: string]: unknown;
+}
+
+/** ความสัมพันธ์ supplier ที่ผูกกับ variant */
+interface VariantSupplierLink {
+  supplier_id?: number | string;
+  supplier_name?: string;
+  Supplier?: { supplier_name?: string };
+  [key: string]: unknown;
+}
+
+/** variant ของสินค้า */
+interface ProductVariant {
+  product_variant_id?: number;
+  sku?: string;
+  ProductVariantSuppliers?: VariantSupplierLink[];
+  Suppliers?: VariantSupplierLink[];
+  [key: string]: unknown;
+}
+
+/** สินค้า (พร้อม variants) จาก inventory endpoint */
+interface InventoryProduct {
+  id?: number | string;
+  product_template_id?: number | string;
+  product_name?: string;
+  variants?: ProductVariant[];
+  [key: string]: unknown;
+}
+
+/** ฟอร์มสร้าง supplier ใหม่ */
+interface NewSupplierForm {
+  supplier_name: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+}
+
 const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('adminToken');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 // Helper: Fetch products
-const fetchProducts = async (): Promise<any[]> => {
+const fetchProducts = async (): Promise<InventoryProduct[]> => {
   const res = await fetch(`${API_URL}/api/inventory/products?all=1`, { headers: authHeaders() });
   const data = await res.json();
   return Array.isArray(data) ? data : (data.items || []);
 };
 
 // Helper: Fetch suppliers
-const fetchSuppliers = async (): Promise<any[]> => {
+const fetchSuppliers = async (): Promise<Supplier[]> => {
   const res = await fetch(`${API_URL}/api/inventory/suppliers`, { headers: authHeaders() });
-  let data: any = [];
+  let data: unknown = [];
   try {
     data = await res.json();
   } catch (e) { data = []; }
-  return Array.isArray(data) ? data : (data.items || []);
+  if (Array.isArray(data)) return data;
+  return (data as { items?: Supplier[] })?.items || [];
 };
 
 function ProductSupplierManager() {
@@ -46,29 +92,29 @@ function ProductSupplierManager() {
   const [search, setSearch] = useState('');
 
   // Editing State
-  const [editProductId, setEditProductId] = useState<any>(null);
+  const [editProductId, setEditProductId] = useState<number | string | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState('');
 
   // Create Supplier State
   const [showCreateSupplier, setShowCreateSupplier] = useState(false);
-  const [newSupplier, setNewSupplier] = useState({ supplier_name: '', contact_person: '', phone: '', email: '' });
+  const [newSupplier, setNewSupplier] = useState<NewSupplierForm>({ supplier_name: '', contact_person: '', phone: '', email: '' });
   const [errorMsg, setErrorMsg] = useState('');
 
   // Filter Logic
-  const filteredProducts = products.filter((p: any) =>
-      p.product_name.toLowerCase().includes(search.toLowerCase()) ||
+  const filteredProducts = products.filter((p: InventoryProduct) =>
+      (p.product_name || '').toLowerCase().includes(search.toLowerCase()) ||
       (p.variants?.[0]?.sku || '').toLowerCase().includes(search.toLowerCase())
   );
 
   // Handlers
-  const handleEdit = (productId: any, currentSupplierId: any) => {
+  const handleEdit = (productId: number | string, currentSupplierId: number | string) => {
     setEditProductId(productId);
-    setSelectedSupplier(currentSupplierId || '');
+    setSelectedSupplier(currentSupplierId ? String(currentSupplierId) : '');
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (productId: any) => {
-      const product = products.find((p: any) => p.id === productId || p.product_template_id === productId);
+    mutationFn: async (productId: number | string) => {
+      const product = products.find((p: InventoryProduct) => p.id === productId || p.product_template_id === productId);
       const variant = product?.variants?.[0];
 
       if (!variant) {
@@ -103,13 +149,13 @@ function ProductSupplierManager() {
       setEditProductId(null);
       queryClient.invalidateQueries({ queryKey: ['inventory-products'] });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error('Save error:', err);
       alert(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดขณะบันทึก');
     },
   });
 
-  const handleSave = (productId: any) => {
+  const handleSave = (productId: number | string) => {
     saveMutation.mutate(productId);
   };
 
@@ -135,12 +181,12 @@ function ProductSupplierManager() {
       setNewSupplier({ supplier_name: '', contact_person: '', phone: '', email: '' });
       queryClient.invalidateQueries({ queryKey: ['inventory-suppliers'] });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       setErrorMsg(err instanceof Error ? err.message : String(err));
     },
   });
 
-  const handleCreateSupplier = (e: any) => {
+  const handleCreateSupplier = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     createSupplierMutation.mutate();
@@ -161,7 +207,7 @@ function ProductSupplierManager() {
                   className={styles.searchInput}
                   placeholder="Search Product..."
                   value={search}
-                  onChange={(e: any) => setSearch(e.target.value)}
+                  onChange={(e: FormFieldEvent) => setSearch(e.target.value)}
               />
            </div>
 
@@ -188,14 +234,14 @@ function ProductSupplierManager() {
               </thead>
               <tbody>
                 {filteredProducts.length === 0 && <tr><td colSpan={3} style={{textAlign:'center', padding:20}}>No products found.</td></tr>}
-                {filteredProducts.map((product: any) => {
-                  const variant = product.variants?.[0] || {};
+                {filteredProducts.map((product: InventoryProduct) => {
+                  const variant: ProductVariant = product.variants?.[0] || {};
                   const supplierArr = variant.ProductVariantSuppliers || variant.Suppliers || [];
                   const currentSupplier = supplierArr.length > 0 ? supplierArr[0] : null;
 
                   const supplierName = currentSupplier?.Supplier?.supplier_name || currentSupplier?.supplier_name || '-';
                   const supplierId = currentSupplier?.supplier_id || '';
-                  const productId = product.product_template_id || product.id;
+                  const productId = (product.product_template_id || product.id)!;
 
                   const isEditing = editProductId === productId;
 
@@ -210,10 +256,10 @@ function ProductSupplierManager() {
                           <select
                             className={styles.inlineSelect}
                             value={selectedSupplier}
-                            onChange={(e: any) => setSelectedSupplier(e.target.value)}
+                            onChange={(e: FormFieldEvent) => setSelectedSupplier(e.target.value)}
                           >
                             <option value=''>-- Select Supplier --</option>
-                            {suppliers.map((s: any) => (
+                            {suppliers.map((s: Supplier) => (
                               <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>
                             ))}
                           </select>
@@ -269,7 +315,7 @@ function ProductSupplierManager() {
                     className={styles.formInput}
                     required
                     value={newSupplier.supplier_name}
-                    onChange={(e: any) => setNewSupplier(s => ({...s, supplier_name: e.target.value}))}
+                    onChange={(e: FormFieldEvent) => setNewSupplier(s => ({...s, supplier_name: e.target.value}))}
                     placeholder="Company Name"
                   />
                 </div>
@@ -283,7 +329,7 @@ function ProductSupplierManager() {
                                 className={styles.formInput}
                                 style={{paddingLeft: 30}}
                                 value={newSupplier.contact_person}
-                                onChange={(e: any) => setNewSupplier(s => ({...s, contact_person: e.target.value}))}
+                                onChange={(e: FormFieldEvent) => setNewSupplier(s => ({...s, contact_person: e.target.value}))}
                             />
                         </div>
                     </div>
@@ -295,7 +341,7 @@ function ProductSupplierManager() {
                                 className={styles.formInput}
                                 style={{paddingLeft: 30}}
                                 value={newSupplier.phone}
-                                onChange={(e: any) => setNewSupplier(s => ({...s, phone: e.target.value}))}
+                                onChange={(e: FormFieldEvent) => setNewSupplier(s => ({...s, phone: e.target.value}))}
                             />
                         </div>
                     </div>
@@ -307,7 +353,7 @@ function ProductSupplierManager() {
                     type="email"
                     className={styles.formInput}
                     value={newSupplier.email}
-                    onChange={(e: any) => setNewSupplier(s => ({...s, email: e.target.value}))}
+                    onChange={(e: FormFieldEvent) => setNewSupplier(s => ({...s, email: e.target.value}))}
                   />
                 </div>
 

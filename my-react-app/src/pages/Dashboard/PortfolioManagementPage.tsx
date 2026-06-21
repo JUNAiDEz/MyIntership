@@ -4,19 +4,92 @@ import { FaEdit, FaTrash, FaPlus, FaEye, FaStar, FaTimes, FaSearch, FaImages } f
 import useDebounce from '../../hooks/useDebounce';
 import { API_URL } from '../../utils/api';
 import { HasPermission } from '../../utils/ProtectedRoute';
+import type { FormFieldEvent, ModalState } from '@/types';
 
 const getToken = () => localStorage.getItem('adminToken');
+
+// --- Local types (map ตาม field จริงจาก backend portfolio endpoints) ---
+
+/** หมวดหมู่ portfolio (endpoint /api/portfolio/categories) — มี alias หลาย key */
+interface PortfolioCategory {
+  portfolio_category_id?: number;
+  category_id?: number;
+  id?: number;
+  category_name: string;
+  [key: string]: unknown;
+}
+
+/** รุ่นรถดิบจาก endpoint /api/vehicles/master/models (ก่อน map) */
+interface RawModel {
+  car_model_id: number;
+  model_name: string;
+  brand?: { brand_name?: string };
+  Brand?: { brand_name?: string };
+  [key: string]: unknown;
+}
+
+/** รุ่นรถที่ map แล้วสำหรับ dropdown */
+interface PortfolioCarModel {
+  car_model_id: number;
+  model_name: string;
+  brand_name: string;
+  display_name: string;
+}
+
+/** หนึ่งรูปใน gallery */
+interface GalleryImage {
+  image_url: string;
+  caption: string;
+}
+
+/** หนึ่ง portfolio project จาก backend (รวม field ที่ component ปรุงเพิ่ม) */
+interface PortfolioItem {
+  project_id?: number;
+  id?: number;
+  title?: string;
+  slug?: string;
+  description?: string;
+  cover_image_url?: string;
+  car_model_id?: number | string;
+  completion_date?: string;
+  is_featured?: boolean;
+  is_active?: boolean;
+  gallery?: GalleryImage[];
+  categories?: PortfolioCategory[];
+  car_model?: {
+    model_name?: string;
+    CarBrand?: { brand_name?: string };
+  } | null;
+  // field ที่ component คำนวณเพิ่มหลัง fetch
+  category_names?: string;
+  car_model_name?: string;
+  [key: string]: unknown;
+}
+
+/** ค่าใน form สำหรับ create/edit portfolio */
+interface PortfolioForm {
+  title: string;
+  slug: string;
+  description: string;
+  cover_image_url: string;
+  car_model_id: number | string;
+  completion_date: string;
+  is_featured: boolean;
+  is_active: boolean;
+  gallery_images: GalleryImage[];
+  category_ids: number[];
+}
 
 export default function PortfolioManagementPage() {
   const PLACEHOLDER_IMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%' fill='%23f3f4f6'><rect width='100%' height='100%' fill='%23f3f4f6'/><text x='50%' y='50%' dy='.3em' fill='%239ca3af' font-size='12' text-anchor='middle'>No Image</text></svg>";
 
   // --- Main State ---
-  const [portfolios, setPortfolios] = useState<any[]>([]);
+  const [portfolios, setPortfolios] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   // --- Master Data ---
-  const [categories, setCategories] = useState<any[]>([]);
-  const [carModels, setCarModels] = useState<any[]>([]);
+  const [categories, setCategories] = useState<PortfolioCategory[]>([]);
+  const [carModels, setCarModels] = useState<PortfolioCarModel[]>([]);
 
   // --- UI Controls ---
   const [search, setSearch] = useState('');
@@ -29,10 +102,11 @@ export default function PortfolioManagementPage() {
   const [carModelFilter, setCarModelFilter] = useState('');
 
   // --- Modal & Form State ---
-  const [modal, setModal] = useState<any>({ open: false, mode: 'view', portfolio: null });
+  // ใช้ ModalState<PortfolioItem> แต่ field ในหน้านี้ชื่อ `portfolio` แทน `item`
+  const [modal, setModal] = useState<Omit<ModalState<PortfolioItem>, 'item'> & { portfolio: PortfolioItem | null }>({ open: false, mode: 'view', portfolio: null });
 
   // Form State (Map to DB: PortfolioProjects)
-  const [createForm, setCreateForm] = useState<any>({
+  const [createForm, setCreateForm] = useState<PortfolioForm>({
     title: '',
     slug: '',
     description: '',
@@ -66,12 +140,14 @@ export default function PortfolioManagementPage() {
       const res = await fetch(`${API_URL}/api/portfolio/projects?${qParams.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch projects');
 
-      const data = await res.json();
-      const items = Array.isArray(data) ? data : data.data || [];
+      const data: unknown = await res.json();
+      const items: PortfolioItem[] = Array.isArray(data)
+        ? (data as PortfolioItem[])
+        : ((data as { data?: PortfolioItem[] }).data || []);
 
-      setPortfolios(items.map((p: any) => ({
+      setPortfolios(items.map((p) => ({
         ...p,
-        category_names: p.categories?.map((c: any) => c.category_name).join(', ') || '-',
+        category_names: p.categories?.map((c) => c.category_name).join(', ') || '-',
         car_model_name: p.car_model ? `${p.car_model.CarBrand?.brand_name || ''} ${p.car_model.model_name}` : '-'
       })));
     } catch (err) {
@@ -91,15 +167,19 @@ export default function PortfolioManagementPage() {
         ]);
 
         if (catRes.ok) {
-            const catData = await catRes.json();
-            setCategories(Array.isArray(catData) ? catData : catData.data || []);
+            const catData: unknown = await catRes.json();
+            setCategories(Array.isArray(catData)
+              ? (catData as PortfolioCategory[])
+              : ((catData as { data?: PortfolioCategory[] }).data || []));
         }
 
         if (modelsRes.ok) {
-            const modelsData = await modelsRes.json();
-            const models = Array.isArray(modelsData) ? modelsData : modelsData.data || [];
+            const modelsData: unknown = await modelsRes.json();
+            const models: RawModel[] = Array.isArray(modelsData)
+              ? (modelsData as RawModel[])
+              : ((modelsData as { data?: RawModel[] }).data || []);
 
-            const formattedModels = models.map((model: any) => ({
+            const formattedModels: PortfolioCarModel[] = models.map((model) => ({
               car_model_id: model.car_model_id,
               model_name: model.model_name,
               brand_name: model.brand?.brand_name || model.Brand?.brand_name || '',
@@ -120,13 +200,13 @@ export default function PortfolioManagementPage() {
   }, [fetchPortfolios]);
 
   // --- 2. Filter & Pagination Logic ---
-  const filteredPortfolios = portfolios.filter((p: any) => {
+  const filteredPortfolios = portfolios.filter((p) => {
       let catOk = true;
       let modelOk = true;
 
       // Category Filter (Check if project has selected category id)
       if (categoryFilter) {
-          catOk = p.categories?.some((c: any) => (c.portfolio_category_id || c.category_id) === Number(categoryFilter));
+          catOk = !!p.categories?.some((c) => (c.portfolio_category_id || c.category_id) === Number(categoryFilter));
       }
 
       // Car Model Filter
@@ -143,7 +223,7 @@ export default function PortfolioManagementPage() {
 
   // --- 3. Actions ---
 
-  const handleImageUpload = async (file: any) => {
+  const handleImageUpload = async (file: File | undefined) => {
     if (!file) return;
     setUploadingImage(true);
     try {
@@ -155,10 +235,10 @@ export default function PortfolioManagementPage() {
         headers: { 'Authorization': `Bearer ${getToken()}` },
         body: formData
       });
-      const data = await res.json();
+      const data = await res.json() as { url?: string; image_url?: string; message?: string };
 
       if (res.ok && (data.url || data.image_url)) {
-        setCreateForm((prev: any) => ({ ...prev, cover_image_url: data.url || data.image_url }));
+        setCreateForm((prev) => ({ ...prev, cover_image_url: data.url || data.image_url || '' }));
       } else {
         alert('Upload failed: ' + (data.message || 'Unknown error'));
       }
@@ -170,7 +250,7 @@ export default function PortfolioManagementPage() {
     }
   };
 
-  const handleGalleryUpload = async (file: any) => {
+  const handleGalleryUpload = async (file: File | undefined) => {
       if (!file) return;
       try {
         const formData = new FormData();
@@ -180,10 +260,10 @@ export default function PortfolioManagementPage() {
             headers: { 'Authorization': `Bearer ${getToken()}` },
             body: formData
         });
-        const data = await res.json();
+        const data = await res.json() as { url?: string; image_url?: string };
         if (res.ok) {
-            const url = data.url || data.image_url;
-            setCreateForm((prev: any) => ({
+            const url = data.url || data.image_url || '';
+            setCreateForm((prev) => ({
                 ...prev,
                 gallery_images: [...prev.gallery_images, { image_url: url, caption: '' }]
             }));
@@ -191,26 +271,26 @@ export default function PortfolioManagementPage() {
       } catch(err) { console.error(err); alert('Gallery upload failed'); }
   };
 
-  const handleRemoveGalleryImage = (index: any) => {
-    setCreateForm((prev: any) => ({
+  const handleRemoveGalleryImage = (index: number) => {
+    setCreateForm((prev) => ({
         ...prev,
-        gallery_images: prev.gallery_images.filter((_: any, i: number) => i !== index)
+        gallery_images: prev.gallery_images.filter((_, i) => i !== index)
     }));
   };
 
-  const handleCategoryToggle = (id: any) => {
-    setCreateForm((prev: any) => {
+  const handleCategoryToggle = (id: number) => {
+    setCreateForm((prev) => {
       const exists = prev.category_ids.includes(id);
       return {
         ...prev,
         category_ids: exists
-          ? prev.category_ids.filter((c: any) => c !== id)
+          ? prev.category_ids.filter((c) => c !== id)
           : [...prev.category_ids, id]
       };
     });
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCreateError('');
     if (!createForm.title || createForm.title.trim() === "") {
@@ -248,7 +328,7 @@ export default function PortfolioManagementPage() {
       });
 
       if (!res.ok) {
-         const errData = await res.json();
+         const errData = await res.json() as { message?: string };
          throw new Error(errData.message || 'Save failed');
       }
 
@@ -261,7 +341,7 @@ export default function PortfolioManagementPage() {
     }
   };
 
-  const handleDelete = async (id: any) => {
+  const handleDelete = async (id: number | undefined) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
     try {
       const res = await fetch(`${API_URL}/api/portfolio/projects/${id}`, { method: 'DELETE', headers });
@@ -273,7 +353,7 @@ export default function PortfolioManagementPage() {
   };
 
   // --- 4. Modal Helper ---
-  const openModal = (mode: any, item: any = null) => {
+  const openModal = (mode: ModalState['mode'], item: PortfolioItem | null = null) => {
     if (mode === 'create') {
       setCreateForm({
         title: '',
@@ -298,7 +378,7 @@ export default function PortfolioManagementPage() {
         is_featured: !!item.is_featured,
         is_active: typeof item.is_active !== 'undefined' ? item.is_active : true,
         gallery_images: item.gallery || [],
-        category_ids: item.categories?.map((c: any) => c.portfolio_category_id || c.category_id) || []
+        category_ids: item.categories?.map((c) => (c.portfolio_category_id || c.category_id) as number) || []
       });
     }
     setCreateError('');
@@ -332,7 +412,7 @@ export default function PortfolioManagementPage() {
                     className={styles.searchInput}
                     placeholder="Search Projects..."
                     value={search}
-                    onChange={(e: any) => { setSearch(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setSearch(e.target.value); setPage(1); }}
                 />
             </div>
 
@@ -342,11 +422,11 @@ export default function PortfolioManagementPage() {
                 <select
                     className={styles.filterSelect}
                     value={categoryFilter}
-                    onChange={(e: any) => { setCategoryFilter(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setCategoryFilter(e.target.value); setPage(1); }}
                     style={{ margin: 0, minWidth: '160px' }}
                 >
                     <option value="">ทั้งหมด</option>
-                    {categories.map((cat: any) => (
+                    {categories.map((cat) => (
                         <option key={cat.portfolio_category_id || cat.id} value={cat.portfolio_category_id || cat.id}>
                             {cat.category_name}
                         </option>
@@ -360,11 +440,11 @@ export default function PortfolioManagementPage() {
                 <select
                     className={styles.filterSelect}
                     value={carModelFilter}
-                    onChange={(e: any) => { setCarModelFilter(e.target.value); setPage(1); }}
+                    onChange={(e: FormFieldEvent) => { setCarModelFilter(e.target.value); setPage(1); }}
                     style={{ margin: 0, minWidth: '160px' }}
                 >
                     <option value="">ทั้งหมด</option>
-                    {carModels.map((model: any) => (
+                    {carModels.map((model) => (
                         <option key={model.car_model_id} value={model.car_model_id}>
                             {model.display_name}
                         </option>
@@ -387,7 +467,7 @@ export default function PortfolioManagementPage() {
           }}>
             {visible.length === 0 && <div style={{gridColumn: '1 / -1', textAlign:'center', padding: '30px'}}>No projects found.</div>}
 
-            {visible.map((p: any) => (
+            {visible.map((p) => (
                 <div key={p.project_id || p.id}
                     onClick={() => openModal('view', p)}
                     style={{
@@ -402,8 +482,8 @@ export default function PortfolioManagementPage() {
                         transition: 'transform 0.2s',
                         cursor: 'pointer'
                   }}
-                  onMouseEnter={(e: any) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                  onMouseLeave={(e: any) => e.currentTarget.style.transform = 'translateY(0)'}
+                  onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                  onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
                     {/* Status Badge */}
                     <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2 }}>
@@ -468,9 +548,9 @@ export default function PortfolioManagementPage() {
                              </div>
                              <div style={{ fontSize: '0.8rem', color: '#999', display: 'flex', alignItems: 'center', gap: 5 }}>
                                  <span>{p.completion_date ? new Date(p.completion_date).toLocaleDateString('th-TH') : '-'}</span>
-                                 {p.gallery?.length > 0 && (
+                                 {(p.gallery?.length ?? 0) > 0 && (
                                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 'auto' }}>
-                                         <FaImages /> {p.gallery.length}
+                                         <FaImages /> {p.gallery?.length}
                                      </span>
                                  )}
                              </div>
@@ -487,14 +567,14 @@ export default function PortfolioManagementPage() {
                         gap: '8px',
                         background: '#fafafa'
                     }}>
-                        <button onClick={(e: any) => { e.stopPropagation(); openModal('view', p); }} className={styles.iconBtn} title="View"><FaEye /></button>
+                        <button onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); openModal('view', p); }} className={styles.iconBtn} title="View"><FaEye /></button>
 
                         <HasPermission resource="portfolio" action="update">
-                            <button onClick={(e: any) => { e.stopPropagation(); openModal('edit', p); }} className={styles.iconBtn} title="Edit"><FaEdit /></button>
+                            <button onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); openModal('edit', p); }} className={styles.iconBtn} title="Edit"><FaEdit /></button>
                         </HasPermission>
 
                         <HasPermission resource="portfolio" action="delete">
-                            <button onClick={(e: any) => { e.stopPropagation(); handleDelete(p.project_id || p.id); }} className={`${styles.iconBtn} ${styles.delete}`} title="Delete"><FaTrash /></button>
+                            <button onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); handleDelete(p.project_id || p.id); }} className={`${styles.iconBtn} ${styles.delete}`} title="Delete"><FaTrash /></button>
                         </HasPermission>
                     </div>
                 </div>
@@ -505,9 +585,9 @@ export default function PortfolioManagementPage() {
           <div className={styles.footer}>
             <div>Total {total} items</div>
             <div className={styles.pagination}>
-              <button className={styles.pageBtn} onClick={() => setPage((p: any) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+              <button className={styles.pageBtn} onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
               <span style={{margin:'0 8px', fontWeight:600}}>Page {page} / {pageCount}</span>
-              <button className={styles.pageBtn} onClick={() => setPage((p: any) => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>Next</button>
+              <button className={styles.pageBtn} onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>Next</button>
             </div>
           </div>
         </>
@@ -535,7 +615,7 @@ export default function PortfolioManagementPage() {
                       <label className={styles.formLabel}>Project Title *</label>
                       <input
                         className={styles.formInput} type="text" value={createForm.title} required disabled={modal.mode === 'view'}
-                        onChange={(e: any) => setCreateForm({...createForm, title: e.target.value})}
+                        onChange={(e: FormFieldEvent) => setCreateForm({...createForm, title: e.target.value})}
                       />
                     </div>
                     <div className={styles.formGroup}>
@@ -545,7 +625,7 @@ export default function PortfolioManagementPage() {
                         type="text"
                         value={createForm.slug}
                         disabled={modal.mode === 'view'}
-                        onChange={(e: any) => setCreateForm({ ...createForm, slug: e.target.value.replace(/[^a-z0-9-]/g, '') })}
+                        onChange={(e: FormFieldEvent) => setCreateForm({ ...createForm, slug: e.target.value.replace(/[^a-z0-9-]/g, '') })}
                         placeholder="e.g. my-portfolio-project"
                       />
                     </div>
@@ -553,12 +633,12 @@ export default function PortfolioManagementPage() {
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Categories</label>
                         <div style={{ border: '1px solid #d1d5db', padding: 10, borderRadius: 6, maxHeight: 150, overflowY: 'auto', background: modal.mode==='view'?'#f9f9f9':'#fff' }}>
-                            {categories.map((cat: any) => (
+                            {categories.map((cat) => (
                                 <label key={cat.portfolio_category_id || cat.id} style={{display:'flex', alignItems:'center', gap:8, marginBottom:5, cursor: modal.mode==='view'?'default':'pointer'}}>
                                     <input
                                             type="checkbox"
-                                            checked={createForm.category_ids.includes(cat.portfolio_category_id || cat.id)}
-                                            onChange={() => handleCategoryToggle(cat.portfolio_category_id || cat.id)}
+                                            checked={createForm.category_ids.includes((cat.portfolio_category_id || cat.id) as number)}
+                                            onChange={() => handleCategoryToggle((cat.portfolio_category_id || cat.id) as number)}
                                             disabled={modal.mode === 'view'}
                                     />
                                     <span style={{fontSize:'0.9rem'}}>{cat.category_name}</span>
@@ -572,12 +652,12 @@ export default function PortfolioManagementPage() {
                         <select
                             className={styles.formSelect}
                             value={createForm.car_model_id}
-                            onChange={(e: any) => setCreateForm({...createForm, car_model_id: e.target.value})}
+                            onChange={(e: FormFieldEvent) => setCreateForm({...createForm, car_model_id: e.target.value})}
                             disabled={modal.mode === 'view'}
                         >
                             <option value="">-- General / None --</option>
-                            {carModels.map((c: any) => (
-                                <option key={c.car_model_id || c.id} value={c.car_model_id || c.id}>
+                            {carModels.map((c) => (
+                                <option key={c.car_model_id} value={c.car_model_id}>
                                     {c.display_name}
                                 </option>
                             ))}
@@ -589,7 +669,7 @@ export default function PortfolioManagementPage() {
                         <input
                             className={styles.formInput} type="date"
                             value={createForm.completion_date}
-                            onChange={(e: any) => setCreateForm({...createForm, completion_date: e.target.value})}
+                            onChange={(e: FormFieldEvent) => setCreateForm({...createForm, completion_date: e.target.value})}
                             disabled={modal.mode === 'view'}
                         />
                     </div>
@@ -598,7 +678,7 @@ export default function PortfolioManagementPage() {
                         <label style={{display:'flex', alignItems:'center', gap:5, cursor:'pointer'}}>
                             <input
                                 type="checkbox" checked={createForm.is_featured}
-                                onChange={(e: any) => setCreateForm({...createForm, is_featured: e.target.checked})}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateForm({...createForm, is_featured: e.target.checked})}
                                 disabled={modal.mode === 'view'}
                             />
                             <span style={{fontSize:'0.9rem'}}>Featured Project</span>
@@ -606,7 +686,7 @@ export default function PortfolioManagementPage() {
                         <label style={{display:'flex', alignItems:'center', gap:5, cursor:'pointer'}}>
                             <input
                                 type="checkbox" checked={createForm.is_active}
-                                onChange={(e: any) => setCreateForm({...createForm, is_active: e.target.checked})}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateForm({...createForm, is_active: e.target.checked})}
                                 disabled={modal.mode === 'view'}
                             />
                             <span style={{fontSize:'0.9rem'}}>Active (Show)</span>
@@ -619,7 +699,7 @@ export default function PortfolioManagementPage() {
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Cover Image</label>
                         {modal.mode !== 'view' && (
-                            <input type="file" accept="image/*" onChange={(e: any) => handleImageUpload(e.target.files[0])} disabled={uploadingImage} style={{marginBottom:5, fontSize:'0.85rem'}} />
+                            <input type="file" accept="image/*" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e.target.files?.[0])} disabled={uploadingImage} style={{marginBottom:5, fontSize:'0.85rem'}} />
                         )}
                         {createForm.cover_image_url && (
                             <img
@@ -636,12 +716,12 @@ export default function PortfolioManagementPage() {
                             <div style={{marginBottom:10}}>
                                 <label className={styles.btnCancel} style={{padding:'6px 12px', fontSize:'0.8rem', cursor:'pointer', display:'inline-block'}}>
                                     <FaPlus /> Upload More
-                                    <input type="file" accept="image/*" multiple onChange={(e: any) => handleGalleryUpload(e.target.files[0])} style={{display:'none'}} />
+                                    <input type="file" accept="image/*" multiple onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleGalleryUpload(e.target.files?.[0])} style={{display:'none'}} />
                                 </label>
                             </div>
                         )}
                         <div style={{ display: 'grid', gridTemplateColumns:'repeat(auto-fill, minmax(70px, 1fr))', gap: 8, border:'1px solid #e5e7eb', padding:10, borderRadius:6, maxHeight:200, overflowY:'auto' }}>
-                            {createForm.gallery_images.map((img: any, idx: number) => (
+                            {createForm.gallery_images.map((img, idx) => (
                                 <div key={idx} style={{ position: 'relative', height: 70 }}>
                                     <img
                                             src={img.image_url.startsWith('http') ? img.image_url : `${API_URL}${img.image_url}`}
@@ -665,7 +745,7 @@ export default function PortfolioManagementPage() {
                         <textarea
                             className={styles.formTextarea} rows={4}
                             value={createForm.description}
-                            onChange={(e: any) => setCreateForm({...createForm, description: e.target.value})}
+                            onChange={(e: FormFieldEvent) => setCreateForm({...createForm, description: e.target.value})}
                             disabled={modal.mode === 'view'}
                         />
                     </div>

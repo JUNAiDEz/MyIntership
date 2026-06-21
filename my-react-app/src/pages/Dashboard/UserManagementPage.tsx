@@ -4,15 +4,80 @@ import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaBan, FaCheckCircle, FaLock, FaSave, FaTimes, FaSearch, FaUserShield, FaUserCog, FaUsers } from 'react-icons/fa';
 import { API_URL } from '../../utils/api';
 import useDebounce from '../../hooks/useDebounce';
+import type { FormFieldEvent } from '@/types';
 
-const getToken = () => localStorage.getItem('adminToken');
+// --- Local domain types (ตาม field จริงที่ใช้ในไฟล์นี้) ---
+interface Role {
+  role_id: number;
+  role_name: string;
+}
 
-const getUserRole = () => {
+/** permission record จาก /api/auth/permissions */
+interface PermissionItem {
+  permission_id: number;
+  resource: string;
+  action: string;
+  description?: string;
+}
+
+/** ข้อมูล account (nested ใต้ employee เป็น `User`) */
+interface UserAccount {
+  username?: string;
+  email?: string;
+  role_id?: number;
+  is_active?: boolean;
+  role?: Role;
+}
+
+/** employee record จาก /api/auth/employees */
+interface Employee {
+  user_id: number;
+  first_name: string;
+  last_name?: string;
+  phone_number?: string;
+  position?: string;
+  User?: UserAccount;
+}
+
+interface CreateForm {
+  username: string;
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  position: string;
+  role_id: number | string;
+}
+
+interface PermForm {
+  resource: string;
+  action: string;
+  description: string;
+}
+
+type UserModalMode = 'view' | 'create';
+interface UserModalState {
+  open: boolean;
+  mode: UserModalMode;
+  user: Employee | null;
+}
+
+/** role/role_name ที่ decode ได้จาก JWT (token ฝั่ง admin มีหลาย alias) */
+type DecodedRolePayload = {
+  role?: string;
+  role_name?: string;
+  roleName?: string;
+};
+
+const getToken = (): string | null => localStorage.getItem('adminToken');
+
+const getUserRole = (): string | null => {
   const token = getToken();
   if (!token) return null;
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.role || payload.role_name || payload.roleName;
+    const payload = JSON.parse(atob(token.split('.')[1])) as DecodedRolePayload;
+    return payload.role || payload.role_name || payload.roleName || null;
   } catch (error) {
     return null;
   }
@@ -25,7 +90,7 @@ function UserManagementPage() {
   const queryClient = useQueryClient();
 
   // --- Main State ---
-  const [userRole, setUserRole] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // --- UI Controls ---
   const [search, setSearch] = useState('');
@@ -35,64 +100,64 @@ function UserManagementPage() {
   const pageSize = 12;
 
   // --- Modal & Form ---
-  const [modal, setModal] = useState<any>({ open: false, mode: 'view', user: null });
-  const [createForm, setCreateForm] = useState<any>({
+  const [modal, setModal] = useState<UserModalState>({ open: false, mode: 'view', user: null });
+  const [createForm, setCreateForm] = useState<CreateForm>({
     username: '', email: '', password: '', first_name: '', last_name: '',
     phone_number: '', position: '', role_id: ''
   });
   const [createError, setCreateError] = useState('');
 
   // --- Permission States ---
-  const [selectedRoleId, setSelectedRoleId] = useState<any>(null);
-  const [selectedRolePermissions, setSelectedRolePermissions] = useState<any[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+  const [selectedRolePermissions, setSelectedRolePermissions] = useState<number[]>([]);
   const [editingPermissions, setEditingPermissions] = useState(false);
 
-  const [selectedUserId, setSelectedUserId] = useState<any>(null);
-  const [selectedUserPermissions, setSelectedUserPermissions] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserPermissions, setSelectedUserPermissions] = useState<number[]>([]);
   const [editingUserPermissions, setEditingUserPermissions] = useState(false);
 
   const [showCreatePermModal, setShowCreatePermModal] = useState(false);
-  const [permForm, setPermForm] = useState<any>({ resource: '', action: '', description: '' });
+  const [permForm, setPermForm] = useState<PermForm>({ resource: '', action: '', description: '' });
 
   const headers = useMemo(() => {
-    const h: any = { 'Content-Type': 'application/json' };
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) h.Authorization = `Bearer ${token}`;
     return h;
   }, []);
 
   // --- 1. Fetch Data ---
-  const rolesQuery = useQuery({
+  const rolesQuery = useQuery<Role[]>({
     queryKey: ['user-roles'],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/auth/roles`, { headers });
       if (!res.ok) throw new Error('Failed to load roles');
-      return res.json();
+      return res.json() as Promise<Role[]>;
     },
   });
 
-  const usersQuery = useQuery({
+  const usersQuery = useQuery<Employee[]>({
     queryKey: ['users'],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/auth/employees`, { headers });
       if (!res.ok) throw new Error('Failed to load users');
-      return res.json();
+      return res.json() as Promise<Employee[]>;
     },
   });
 
-  const permissionsQuery = useQuery({
+  const permissionsQuery = useQuery<PermissionItem[]>({
     queryKey: ['user-permissions'],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/auth/permissions`, { headers });
       if (!res.ok) throw new Error('Failed to load permissions');
-      const data = await res.json();
-      return data.data || data;
+      const data = (await res.json()) as { data?: PermissionItem[] } | PermissionItem[];
+      return (Array.isArray(data) ? data : data.data) || [];
     },
   });
 
-  const roles: any[] = rolesQuery.data || [];
-  const users: any[] = usersQuery.data || [];
-  const permissions: any[] = permissionsQuery.data || [];
+  const roles: Role[] = rolesQuery.data || [];
+  const users: Employee[] = usersQuery.data || [];
+  const permissions: PermissionItem[] = permissionsQuery.data || [];
   const loading = rolesQuery.isLoading || usersQuery.isLoading || permissionsQuery.isLoading;
   const error = (rolesQuery.error || usersQuery.error || permissionsQuery.error) ? 'Failed to load data' : '';
 
@@ -107,15 +172,16 @@ function UserManagementPage() {
   }, []);
 
   // --- 2. Filtering & Pagination ---
-  const filteredUsers = users.filter((u: any) => {
+  const filteredUsers = users.filter((u: Employee) => {
       let searchOk = true;
       let roleOk = true;
 
       if (debouncedSearch) {
           const lower = debouncedSearch.toLowerCase();
-          searchOk = u.first_name?.toLowerCase().includes(lower) ||
+          searchOk = Boolean(
+                     u.first_name?.toLowerCase().includes(lower) ||
                      u.last_name?.toLowerCase().includes(lower) ||
-                     u.User?.username?.toLowerCase().includes(lower);
+                     u.User?.username?.toLowerCase().includes(lower));
       }
 
       if (roleFilter) {
@@ -139,42 +205,43 @@ function UserManagementPage() {
       return result;
     },
     onSuccess: () => { refresh(); setModal({ open: false, mode: 'view', user: null }); },
-    onError: (err: any) => setCreateError(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => setCreateError(err instanceof Error ? err.message : String(err)),
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: async (userId: any) => {
+    mutationFn: async (userId: number) => {
       const res = await fetch(`${API_URL}/api/auth/users/${userId}/status`, { method: 'PATCH', headers });
       if (!res.ok) throw new Error('Failed to update status');
       return res.json();
     },
     onSuccess: refresh,
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError('');
     saveMutation.mutate();
   };
 
-  const handleToggleStatus = (userId: any, currentStatus: any) => {
+  const handleToggleStatus = (userId: number, currentStatus: boolean | undefined) => {
     if (!window.confirm(`Confirm ${currentStatus ? 'suspend' : 'activate'} user?`)) return;
     toggleStatusMutation.mutate(userId);
   };
 
   // --- Permissions Logic ---
-  const fetchRolePermissions = async (roleId: any) => {
+  const fetchRolePermissions = async (roleId: number | null) => {
+    if (roleId == null) return;
     try {
       const res = await fetch(`${API_URL}/api/auth/roles/${roleId}/permissions`, { headers });
       if (res.ok) {
-          const data = await res.json();
-          setSelectedRolePermissions((data.data.permissions_table || []).map((p: any) => p.permission_id));
+          const data = (await res.json()) as { data: { permissions_table?: PermissionItem[] } };
+          setSelectedRolePermissions((data.data.permissions_table || []).map((p) => p.permission_id));
       }
     } catch (err) { console.error(err); }
   };
 
-  const handleRoleSelect = (roleId: any) => {
+  const handleRoleSelect = (roleId: number) => {
     setSelectedRoleId(roleId);
     setEditingPermissions(false);
     fetchRolePermissions(roleId);
@@ -187,7 +254,7 @@ function UserManagementPage() {
       });
     },
     onSuccess: () => { setEditingPermissions(false); refresh(); },
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
   const handleSavePermissions = () => {
@@ -195,17 +262,18 @@ function UserManagementPage() {
     savePermissionsMutation.mutate();
   };
 
-  const fetchUserPermissions = async (userId: any) => {
+  const fetchUserPermissions = async (userId: number | null) => {
+    if (userId == null) return;
     try {
       const res = await fetch(`${API_URL}/api/auth/users/${userId}/permissions`, { headers });
       if (res.ok) {
-          const data = await res.json();
-          setSelectedUserPermissions((data.data || []).map((p: any) => p.permission_id));
+          const data = (await res.json()) as { data?: PermissionItem[] };
+          setSelectedUserPermissions((data.data || []).map((p) => p.permission_id));
       }
     } catch (err) { console.error(err); }
   };
 
-  const handleUserSelect = (userId: any) => {
+  const handleUserSelect = (userId: number) => {
     setSelectedUserId(userId);
     setEditingUserPermissions(false);
     fetchUserPermissions(userId);
@@ -218,7 +286,7 @@ function UserManagementPage() {
       });
     },
     onSuccess: () => { setEditingUserPermissions(false); refresh(); },
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
   const handleSaveUserPermissions = () => {
@@ -237,17 +305,17 @@ function UserManagementPage() {
       setPermForm({ resource: '', action: '', description: '' });
       refresh();
     },
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
-  const handleCreatePermission = (e: any) => {
+  const handleCreatePermission = (e: React.FormEvent) => {
     e.preventDefault();
     createPermissionMutation.mutate();
   };
 
   const groupedPermissions = useMemo(() => {
-    const groups: any = {};
-    permissions.forEach((perm: any) => {
+    const groups: Record<string, PermissionItem[]> = {};
+    permissions.forEach((perm) => {
       if (perm.resource === 'customers') return;
       if (!groups[perm.resource]) groups[perm.resource] = [];
       groups[perm.resource].push(perm);
@@ -255,11 +323,11 @@ function UserManagementPage() {
     return groups;
   }, [permissions]);
 
-  const selectedUser = users.find((u: any) => u.user_id === selectedUserId);
-  const selectedRole = roles.find((r: any) => r.role_id === selectedRoleId);
+  const selectedUser = users.find((u) => u.user_id === selectedUserId);
+  const selectedRole = roles.find((r) => r.role_id === selectedRoleId);
 
   // --- Modal Helpers ---
-  const openModal = (mode: any, user: any = null) => {
+  const openModal = (mode: UserModalMode, user: Employee | null = null) => {
     if (mode === 'create') {
       setCreateForm({ username: '', email: '', password: '', first_name: '', last_name: '', phone_number: '', position: '', role_id: roles[0]?.role_id || '' });
     }
@@ -312,11 +380,11 @@ function UserManagementPage() {
                 <div style={{ display: 'flex', gap: 10, flexWrap:'wrap', flex: 1, justifyContent:'flex-end' }}>
                     <div className={styles.searchWrapper} style={{ minWidth: '200px' }}>
                         <FaSearch className={styles.searchIcon} />
-                        <input className={styles.searchInput} placeholder="Search Name..." value={search} onChange={(e: any) => { setSearch(e.target.value); setPage(1); }} />
+                        <input className={styles.searchInput} placeholder="Search Name..." value={search} onChange={(e: FormFieldEvent) => { setSearch(e.target.value); setPage(1); }} />
                     </div>
-                    <select className={styles.filterSelect} value={roleFilter} onChange={(e: any) => { setRoleFilter(e.target.value); setPage(1); }}>
+                    <select className={styles.filterSelect} value={roleFilter} onChange={(e: FormFieldEvent) => { setRoleFilter(e.target.value); setPage(1); }}>
                         <option value="">All Roles</option>
-                        {roles.map((r: any) => <option key={r.role_id} value={r.role_id}>{r.role_name}</option>)}
+                        {roles.map((r) => <option key={r.role_id} value={r.role_id}>{r.role_name}</option>)}
                     </select>
                 </div>
             )}
@@ -330,7 +398,7 @@ function UserManagementPage() {
       {!loading && activeTab === 'users' && (
         <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', padding: '10px 0' }}>
-                {visible.map((user: any) => (
+                {visible.map((user) => (
                     <div key={user.user_id}
                         style={{
                             background: '#fff', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
@@ -338,8 +406,8 @@ function UserManagementPage() {
                             position: 'relative', transition: 'transform 0.2s', cursor: 'pointer'
                         }}
                         onClick={() => openModal('view', user)}
-                        onMouseEnter={(e: any) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                        onMouseLeave={(e: any) => e.currentTarget.style.transform = 'translateY(0)'}
+                        onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.transform = 'translateY(0)'}
                     >
                         {/* Status Badge */}
                         <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 2 }}>
@@ -381,10 +449,10 @@ function UserManagementPage() {
 
                         {/* Footer */}
                         <div style={{ padding: '12px 16px', background: '#fafafa', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                            <button onClick={(e: any) => { e.stopPropagation(); openModal('view', user); }} className={styles.iconBtn} title="View"><FaEye /></button>
+                            <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); openModal('view', user); }} className={styles.iconBtn} title="View"><FaEye /></button>
                             {userRole === 'HighestAdmin' && (
                                 <button
-                                    onClick={(e: any) => { e.stopPropagation(); handleToggleStatus(user.user_id, user.User?.is_active); }}
+                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleToggleStatus(user.user_id, user.User?.is_active); }}
                                     className={styles.iconBtn}
                                     style={{ color: user.User?.is_active ? '#ef4444' : '#10b981' }}
                                     title={user.User?.is_active ? 'Suspend' : 'Activate'}
@@ -402,9 +470,9 @@ function UserManagementPage() {
             <div className={styles.footer}>
                 <div>Total {total} users</div>
                 <div className={styles.pagination}>
-                    <button className={styles.pageBtn} disabled={page === 1} onClick={() => setPage((p: any) => p - 1)}>Prev</button>
+                    <button className={styles.pageBtn} disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
                     <span style={{margin:'0 8px', fontWeight:600}}>Page {page} / {pageCount}</span>
-                    <button className={styles.pageBtn} disabled={page === pageCount} onClick={() => setPage((p: any) => p + 1)}>Next</button>
+                    <button className={styles.pageBtn} disabled={page === pageCount} onClick={() => setPage((p) => p + 1)}>Next</button>
                 </div>
             </div>
         </>
@@ -416,7 +484,7 @@ function UserManagementPage() {
             {/* Left: User List */}
             <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, height: 'calc(100vh - 200px)', overflowY: 'auto' }}>
                 <h4 style={{ margin: '0 0 10px 0', padding: '0 10px' }}>Select User</h4>
-                {users.map((u: any) => (
+                {users.map((u) => (
                     <div key={u.user_id}
                         onClick={() => handleUserSelect(u.user_id)}
                         style={{
@@ -453,13 +521,13 @@ function UserManagementPage() {
                             )}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                            {Object.entries(groupedPermissions).map(([res, perms]: [any, any]) => (
+                            {Object.entries(groupedPermissions).map(([res, perms]) => (
                                 <div key={res} style={{ border: '1px solid #eee', borderRadius: 8, padding: 15 }}>
                                     <h4 style={{ margin: '0 0 10px 0', textTransform: 'capitalize' }}>{res}</h4>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
-                                        {perms.map((p: any) => (
+                                        {perms.map((p) => (
                                             <label key={p.permission_id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: editingUserPermissions ? 'pointer' : 'default' }}>
-                                                <input type="checkbox" checked={selectedUserPermissions.includes(p.permission_id)} onChange={() => { if(editingUserPermissions) setSelectedUserPermissions((prev: any) => prev.includes(p.permission_id) ? prev.filter((id: any) => id !== p.permission_id) : [...prev, p.permission_id]); }} disabled={!editingUserPermissions} style={{accentColor:'#ffc709'}} />
+                                                <input type="checkbox" checked={selectedUserPermissions.includes(p.permission_id)} onChange={() => { if(editingUserPermissions) setSelectedUserPermissions((prev) => prev.includes(p.permission_id) ? prev.filter((id) => id !== p.permission_id) : [...prev, p.permission_id]); }} disabled={!editingUserPermissions} style={{accentColor:'#ffc709'}} />
                                                 {p.action}
                                             </label>
                                         ))}
@@ -478,7 +546,7 @@ function UserManagementPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, marginTop: 10 }}>
             <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10 }}>
                 <h4 style={{ margin: '0 0 10px 0', padding: '0 10px' }}>Select Role</h4>
-                {roles.map((r: any) => (
+                {roles.map((r) => (
                     <div key={r.role_id} onClick={() => handleRoleSelect(r.role_id)}
                         style={{
                             padding: '12px', borderRadius: 6, cursor: 'pointer', marginBottom: 5,
@@ -506,13 +574,13 @@ function UserManagementPage() {
                             )}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                            {Object.entries(groupedPermissions).map(([res, perms]: [any, any]) => (
+                            {Object.entries(groupedPermissions).map(([res, perms]) => (
                                 <div key={res} style={{ border: '1px solid #eee', borderRadius: 8, padding: 15 }}>
                                     <h4 style={{ margin: '0 0 10px 0', textTransform: 'capitalize' }}>{res}</h4>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
-                                        {perms.map((p: any) => (
+                                        {perms.map((p) => (
                                             <label key={p.permission_id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: editingPermissions ? 'pointer' : 'default' }}>
-                                                <input type="checkbox" checked={selectedRolePermissions.includes(p.permission_id)} onChange={() => { if(editingPermissions) setSelectedRolePermissions((prev: any) => prev.includes(p.permission_id) ? prev.filter((id: any) => id !== p.permission_id) : [...prev, p.permission_id]); }} disabled={!editingPermissions} style={{accentColor:'#ffc709'}} />
+                                                <input type="checkbox" checked={selectedRolePermissions.includes(p.permission_id)} onChange={() => { if(editingPermissions) setSelectedRolePermissions((prev) => prev.includes(p.permission_id) ? prev.filter((id) => id !== p.permission_id) : [...prev, p.permission_id]); }} disabled={!editingPermissions} style={{accentColor:'#ffc709'}} />
                                                 {p.action}
                                             </label>
                                         ))}
@@ -554,43 +622,43 @@ function UserManagementPage() {
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Username *</label>
-                                <input className={styles.formInput} value={createForm.username} onChange={(e: any) => setCreateForm({...createForm, username: e.target.value})} required />
+                                <input className={styles.formInput} value={createForm.username} onChange={(e: FormFieldEvent) => setCreateForm({...createForm, username: e.target.value})} required />
                             </div>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Password *</label>
-                                <input className={styles.formInput} type="password" value={createForm.password} onChange={(e: any) => setCreateForm({...createForm, password: e.target.value})} required />
+                                <input className={styles.formInput} type="password" value={createForm.password} onChange={(e: FormFieldEvent) => setCreateForm({...createForm, password: e.target.value})} required />
                             </div>
                         </div>
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>First Name *</label>
-                                <input className={styles.formInput} value={createForm.first_name} onChange={(e: any) => setCreateForm({...createForm, first_name: e.target.value})} required />
+                                <input className={styles.formInput} value={createForm.first_name} onChange={(e: FormFieldEvent) => setCreateForm({...createForm, first_name: e.target.value})} required />
                             </div>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Last Name *</label>
-                                <input className={styles.formInput} value={createForm.last_name} onChange={(e: any) => setCreateForm({...createForm, last_name: e.target.value})} required />
+                                <input className={styles.formInput} value={createForm.last_name} onChange={(e: FormFieldEvent) => setCreateForm({...createForm, last_name: e.target.value})} required />
                             </div>
                         </div>
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Email</label>
-                                <input className={styles.formInput} type="email" value={createForm.email} onChange={(e: any) => setCreateForm({...createForm, email: e.target.value})} />
+                                <input className={styles.formInput} type="email" value={createForm.email} onChange={(e: FormFieldEvent) => setCreateForm({...createForm, email: e.target.value})} />
                             </div>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Phone</label>
-                                <input className={styles.formInput} value={createForm.phone_number} onChange={(e: any) => setCreateForm({...createForm, phone_number: e.target.value})} />
+                                <input className={styles.formInput} value={createForm.phone_number} onChange={(e: FormFieldEvent) => setCreateForm({...createForm, phone_number: e.target.value})} />
                             </div>
                         </div>
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Position</label>
-                                <input className={styles.formInput} value={createForm.position} onChange={(e: any) => setCreateForm({...createForm, position: e.target.value})} required />
+                                <input className={styles.formInput} value={createForm.position} onChange={(e: FormFieldEvent) => setCreateForm({...createForm, position: e.target.value})} required />
                             </div>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Role *</label>
-                                <select className={styles.formSelect} value={createForm.role_id} onChange={(e: any) => setCreateForm({...createForm, role_id: e.target.value})} required>
+                                <select className={styles.formSelect} value={createForm.role_id} onChange={(e: FormFieldEvent) => setCreateForm({...createForm, role_id: e.target.value})} required>
                                     <option value="">Select Role</option>
-                                    {roles.map((r: any) => <option key={r.role_id} value={r.role_id}>{r.role_name}</option>)}
+                                    {roles.map((r) => <option key={r.role_id} value={r.role_id}>{r.role_name}</option>)}
                                 </select>
                             </div>
                         </div>
@@ -612,18 +680,18 @@ function UserManagementPage() {
                 <form onSubmit={handleCreatePermission}>
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Resource *</label>
-                        <input className={styles.formInput} value={permForm.resource} onChange={(e: any) => setPermForm({...permForm, resource: e.target.value})} required placeholder="e.g. products" />
+                        <input className={styles.formInput} value={permForm.resource} onChange={(e: FormFieldEvent) => setPermForm({...permForm, resource: e.target.value})} required placeholder="e.g. products" />
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Action *</label>
-                        <select className={styles.formSelect} value={permForm.action} onChange={(e: any) => setPermForm({...permForm, action: e.target.value})} required>
+                        <select className={styles.formSelect} value={permForm.action} onChange={(e: FormFieldEvent) => setPermForm({...permForm, action: e.target.value})} required>
                             <option value="">Select Action</option>
                             <option value="create">create</option><option value="read">read</option><option value="update">update</option><option value="delete">delete</option>
                         </select>
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Description</label>
-                        <input className={styles.formInput} value={permForm.description} onChange={(e: any) => setPermForm({...permForm, description: e.target.value})} />
+                        <input className={styles.formInput} value={permForm.description} onChange={(e: FormFieldEvent) => setPermForm({...permForm, description: e.target.value})} />
                     </div>
                     <div className={styles.modalActions}>
                         <button type="button" onClick={() => setShowCreatePermModal(false)} className={styles.btnCancel}>Cancel</button>

@@ -1,18 +1,61 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { FormFieldEvent } from '@/types';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaSave, FaTimes, FaCar, FaPalette, FaSearch } from 'react-icons/fa';
 import { API_URL } from '../../utils/api';
 import useDebounce from '../../hooks/useDebounce';
 
 const STICKER_API_URL = `${API_URL}/api/stickers`;
+
+/** ฟิลด์รูปทั้งหมดของรถ 1 คัน (base/paint ต่อชิ้นส่วน) */
+type CarImageField =
+  | 'base_image' | 'paint_image'
+  | 'base_door_image' | 'paint_door_image'
+  | 'base_fender_image' | 'paint_fender_image'
+  | 'base_trunk_image' | 'paint_trunk_image'
+  | 'base_hood_image' | 'paint_hood_image'
+  | 'base_roof_image' | 'paint_roof_image';
+
+/** ฟอร์มข้อมูลรถ (รูปเก็บเป็น base64 string หรือ null) */
+type CarForm = {
+  name: string;
+  description: string;
+} & Record<CarImageField, string | null>;
+
+/** รถ 1 คันจาก backend (มี id เพิ่มจาก CarForm) */
+interface StickerCar extends CarForm {
+  id: number;
+}
+
+/** ฟอร์มข้อมูลสี */
+interface ColorForm {
+  name: string;
+  color_code: string;
+  color_id: string;
+  css_filter: string;
+  display_order: number;
+}
+
+/** สี 1 รายการจาก backend */
+interface StickerColor extends ColorForm {
+  id: number;
+}
+
+/** state ของ modal */
+interface StickerModalState {
+  open: boolean;
+  type: 'car' | 'color';
+  mode: 'create' | 'edit';
+  data: StickerCar | StickerColor | null;
+}
 const PLACEHOLDER_IMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%' fill='%23f3f4f6'><rect width='100%' height='100%' fill='%23f3f4f6'/><text x='50%' y='50%' dy='.3em' fill='%239ca3af' font-size='12' text-anchor='middle'>No Image</text></svg>";
 
 // --- Helpers ---
-const hexToFilter = (hex: any) => {
+const hexToFilter = (hex: string): string => {
   if (!hex) return 'none';
   const hexClean = hex.replace('#', '').toLowerCase();
-  const specialColors: any = {
+  const specialColors: Record<string, string> = {
     'ffffff': 'brightness(2) saturate(0)',
     '000000': 'brightness(0.25) contrast(1.2) grayscale(1)',
   };
@@ -44,13 +87,14 @@ const hexToFilter = (hex: any) => {
 };
 
 // 🔥 [แก้ไข] ลดความละเอียดภาพลง เพื่อไม่ให้ไฟล์ใหญ่เกิน Nginx Limit (1MB)
-const compressImage = (file: any, callback: any) => {
+const compressImage = (file: File, callback: (base64: string) => void) => {
     const reader = new FileReader();
-    reader.onload = (e: any) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const ctx: any = canvas.getContext('2d');
+        // getContext('2d') คืน null ตามสเปคได้ แต่ในบริบทนี้มีเสมอ — assert เพื่อคงพฤติกรรมเดิม
+        const ctx = canvas.getContext('2d')!;
         // ปรับลดจาก 800 เหลือ 500
         const MAX_WIDTH = 500; const MAX_HEIGHT = 500;
         let width = img.width; let height = img.height;
@@ -64,12 +108,20 @@ const compressImage = (file: any, callback: any) => {
         const base64String = isPNG ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.6);
         callback(base64String);
       };
-      img.src = e.target.result;
+      // readAsDataURL คืนผลเป็น data URL (string) เสมอ
+      img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
 };
 
-const ImageInputBox = ({ label, field, preview, onChange }: { label?: any; field?: any; preview?: any; onChange?: any }) => (
+interface ImageInputBoxProps {
+  label?: string;
+  field?: CarImageField;
+  preview?: string | null;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>, field?: CarImageField) => void;
+}
+
+const ImageInputBox = ({ label, field, preview, onChange }: ImageInputBoxProps) => (
     <div style={{ flex: 1, border: '1px solid #e5e7eb', padding: 10, borderRadius: 6, background: '#f9fafb' }}>
         <label style={{ fontSize:'0.8rem', marginBottom:8, display: 'block', fontWeight: 'bold', color: '#374151' }}>{label}</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -77,21 +129,21 @@ const ImageInputBox = ({ label, field, preview, onChange }: { label?: any; field
                 <img src={preview || PLACEHOLDER_IMG} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div style={{ flex: 1 }}>
-                <input type="file" accept="image/*" onChange={(e) => onChange(e, field)} style={{ fontSize: '0.8rem', width: '100%' }} />
+                <input type="file" accept="image/*" onChange={(e) => onChange?.(e, field)} style={{ fontSize: '0.8rem', width: '100%' }} />
             </div>
         </div>
     </div>
 );
 
 // Helper: Fetch cars
-const fetchCars = async (): Promise<any[]> => {
+const fetchCars = async (): Promise<StickerCar[]> => {
   const response = await fetch(`${STICKER_API_URL}/cars`);
   if (!response.ok) throw new Error('Failed to fetch cars');
   return response.json();
 };
 
 // Helper: Fetch colors
-const fetchColors = async (): Promise<any[]> => {
+const fetchColors = async (): Promise<StickerColor[]> => {
   const response = await fetch(`${STICKER_API_URL}/colors`);
   if (!response.ok) throw new Error('Failed to fetch colors');
   return response.json();
@@ -113,9 +165,9 @@ function StickerDashboard() {
   const [activeTab, setActiveTab] = useState('cars');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
-  const [modal, setModal] = useState<any>({ open: false, type: 'car', mode: 'create', data: null });
+  const [modal, setModal] = useState<StickerModalState>({ open: false, type: 'car', mode: 'create', data: null });
 
-  const initialCarState: any = {
+  const initialCarState: CarForm = {
     name: '', description: '',
     base_image: null,        paint_image: null,
     base_door_image: null,   paint_door_image: null,
@@ -125,27 +177,27 @@ function StickerDashboard() {
     base_roof_image: null,   paint_roof_image: null,
   };
 
-  const [carForm, setCarForm] = useState<any>(initialCarState);
-  const [previews, setPreviews] = useState<any>(initialCarState);
+  const [carForm, setCarForm] = useState<CarForm>(initialCarState);
+  const [previews, setPreviews] = useState<Record<CarImageField, string | null>>(initialCarState);
 
-  const [colorForm, setColorForm] = useState<any>({
+  const [colorForm, setColorForm] = useState<ColorForm>({
     name: '', color_code: '#000000', color_id: '', css_filter: 'none', display_order: 0
   });
 
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const filteredCars = cars.filter((c: any) => c.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
-  const filteredColors = colors.filter((c: any) => c.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || c.color_id.toLowerCase().includes(debouncedSearch.toLowerCase()));
+  const filteredCars = cars.filter((c: StickerCar) => c.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
+  const filteredColors = colors.filter((c: StickerColor) => c.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || c.color_id.toLowerCase().includes(debouncedSearch.toLowerCase()));
 
-  const handleCarFileChange = (e: any, field: any) => {
-    const file = e.target.files[0];
-    if (file) {
+  const handleCarFileChange = (e: React.ChangeEvent<HTMLInputElement>, field?: CarImageField) => {
+    const file = e.target.files?.[0];
+    if (file && field) {
       const objectUrl = URL.createObjectURL(file);
-      setPreviews((prev: any) => ({ ...prev, [field]: objectUrl }));
+      setPreviews((prev) => ({ ...prev, [field]: objectUrl }));
 
       setUploadingImage(true);
-      compressImage(file, (base64String: any) => {
-        setCarForm((prev: any) => ({ ...prev, [field]: base64String }));
+      compressImage(file, (base64String: string) => {
+        setCarForm((prev) => ({ ...prev, [field]: base64String }));
         setUploadingImage(false);
       });
     }
@@ -154,7 +206,7 @@ function StickerDashboard() {
   // 🔥 [แก้ไข] เพิ่มการจับ Error ให้ชัดเจน จะได้รู้ว่าติดที่ตรงไหน
   const carSubmitMutation = useMutation({
     mutationFn: async () => {
-      const url = modal.mode === 'edit' ? `${STICKER_API_URL}/cars/${modal.data.id}` : `${STICKER_API_URL}/cars`;
+      const url = modal.mode === 'edit' ? `${STICKER_API_URL}/cars/${modal.data?.id}` : `${STICKER_API_URL}/cars`;
       const method = modal.mode === 'edit' ? 'PUT' : 'POST';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(carForm) });
 
@@ -170,34 +222,34 @@ function StickerDashboard() {
       queryClient.invalidateQueries({ queryKey: ['sticker-cars'] });
       closeModal();
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error(err);
       alert(`บันทึกไม่สำเร็จ!\n\nสาเหตุ: ${err instanceof Error ? err.message : String(err)}\n\n(หากขึ้น Error 413 แปลว่าไฟล์ภาพรวมกันมีขนาดใหญ่เกินไปครับ)`);
     },
   });
 
-  const handleCarSubmit = (e: any) => {
+  const handleCarSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!carForm.name) return alert('Please enter car name');
     carSubmitMutation.mutate();
   };
 
   const deleteCarMutation = useMutation({
-    mutationFn: async (id: any) => {
+    mutationFn: async (id: number) => {
       await fetch(`${STICKER_API_URL}/cars/${id}`, { method: 'DELETE' });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sticker-cars'] }),
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
-  const handleDeleteCar = (id: any) => {
+  const handleDeleteCar = (id: number) => {
     if (!window.confirm('Delete this car?')) return;
     deleteCarMutation.mutate(id);
   };
 
   const colorSubmitMutation = useMutation({
     mutationFn: async () => {
-      const url = modal.mode === 'edit' ? `${STICKER_API_URL}/colors/${modal.data.id}` : `${STICKER_API_URL}/colors`;
+      const url = modal.mode === 'edit' ? `${STICKER_API_URL}/colors/${modal.data?.id}` : `${STICKER_API_URL}/colors`;
       const method = modal.mode === 'edit' ? 'PUT' : 'POST';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(colorForm) });
       if (!res.ok) throw new Error('Failed');
@@ -207,55 +259,61 @@ function StickerDashboard() {
       queryClient.invalidateQueries({ queryKey: ['sticker-colors'] });
       closeModal();
     },
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
-  const handleColorSubmit = (e: any) => {
+  const handleColorSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!colorForm.name || !colorForm.color_id) return alert('Name and ID required');
     colorSubmitMutation.mutate();
   };
 
   const deleteColorMutation = useMutation({
-    mutationFn: async (id: any) => {
+    mutationFn: async (id: number) => {
       await fetch(`${STICKER_API_URL}/colors/${id}`, { method: 'DELETE' });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sticker-colors'] }),
-    onError: (err: any) => alert(err instanceof Error ? err.message : String(err)),
+    onError: (err: unknown) => alert(err instanceof Error ? err.message : String(err)),
   });
 
-  const handleDeleteColor = (id: any) => {
+  const handleDeleteColor = (id: number) => {
     if (!window.confirm('Delete color?')) return;
     deleteColorMutation.mutate(id);
   };
 
-  const openModal = (type: any, mode: any, data: any = null) => {
+  const openModal = (
+    type: 'car' | 'color',
+    mode: 'create' | 'edit',
+    data: StickerCar | StickerColor | null = null
+  ) => {
     if (type === 'car') {
-        if (mode === 'edit' && data) {
+        const carData = data as StickerCar | null;
+        if (mode === 'edit' && carData) {
             setCarForm({
-                name: data.name, description: data.description || '',
-                base_image: data.base_image,               paint_image: data.paint_image,
-                base_door_image: data.base_door_image,     paint_door_image: data.paint_door_image,
-                base_fender_image: data.base_fender_image, paint_fender_image: data.paint_fender_image,
-                base_trunk_image: data.base_trunk_image,   paint_trunk_image: data.paint_trunk_image,
-                base_hood_image: data.base_hood_image,     paint_hood_image: data.paint_hood_image,
-                base_roof_image: data.base_roof_image,     paint_roof_image: data.paint_roof_image,
+                name: carData.name, description: carData.description || '',
+                base_image: carData.base_image,               paint_image: carData.paint_image,
+                base_door_image: carData.base_door_image,     paint_door_image: carData.paint_door_image,
+                base_fender_image: carData.base_fender_image, paint_fender_image: carData.paint_fender_image,
+                base_trunk_image: carData.base_trunk_image,   paint_trunk_image: carData.paint_trunk_image,
+                base_hood_image: carData.base_hood_image,     paint_hood_image: carData.paint_hood_image,
+                base_roof_image: carData.base_roof_image,     paint_roof_image: carData.paint_roof_image,
             });
             setPreviews({
-                base_image: data.base_image,               paint_image: data.paint_image,
-                base_door_image: data.base_door_image,     paint_door_image: data.paint_door_image,
-                base_fender_image: data.base_fender_image, paint_fender_image: data.paint_fender_image,
-                base_trunk_image: data.base_trunk_image,   paint_trunk_image: data.paint_trunk_image,
-                base_hood_image: data.base_hood_image,     paint_hood_image: data.paint_hood_image,
-                base_roof_image: data.base_roof_image,     paint_roof_image: data.paint_roof_image,
+                base_image: carData.base_image,               paint_image: carData.paint_image,
+                base_door_image: carData.base_door_image,     paint_door_image: carData.paint_door_image,
+                base_fender_image: carData.base_fender_image, paint_fender_image: carData.paint_fender_image,
+                base_trunk_image: carData.base_trunk_image,   paint_trunk_image: carData.paint_trunk_image,
+                base_hood_image: carData.base_hood_image,     paint_hood_image: carData.paint_hood_image,
+                base_roof_image: carData.base_roof_image,     paint_roof_image: carData.paint_roof_image,
             });
         } else {
             setCarForm(initialCarState);
             setPreviews(initialCarState);
         }
     } else if (type === 'color') {
-        if (mode === 'edit' && data) {
-            setColorForm({ name: data.name, color_code: data.color_code, color_id: data.color_id, css_filter: data.css_filter, display_order: data.display_order });
+        const colorData = data as StickerColor | null;
+        if (mode === 'edit' && colorData) {
+            setColorForm({ name: colorData.name, color_code: colorData.color_code, color_id: colorData.color_id, css_filter: colorData.css_filter, display_order: colorData.display_order });
         } else {
             setColorForm({ name: '', color_code: '#000000', color_id: '', css_filter: 'none', display_order: 0 });
         }
@@ -302,7 +360,7 @@ function StickerDashboard() {
         <div style={{ marginTop: 20 }}>
             {activeTab === 'cars' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
-                    {filteredCars.map((c: any) => (
+                    {filteredCars.map((c: StickerCar) => (
                         <div key={c.id} onClick={() => openModal('car', 'edit', c)}
                             style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'transform 0.2s' }}
                             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
@@ -326,7 +384,7 @@ function StickerDashboard() {
 
             {activeTab === 'colors' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
-                    {filteredColors.map((c: any) => (
+                    {filteredColors.map((c: StickerColor) => (
                         <div key={c.id} onClick={() => openModal('color', 'edit', c)}
                             style={{ background: '#fff', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', padding: '10px', gap: 15, cursor: 'pointer', transition: 'transform 0.2s' }}
                             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}

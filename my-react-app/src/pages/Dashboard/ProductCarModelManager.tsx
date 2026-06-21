@@ -1,15 +1,44 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { FormFieldEvent } from '@/types';
 import styles from './ProductManagementPage.module.css';
 import { API_URL } from '../../utils/api';
 
-function ProductCarModelManager({ productTemplateId, onClose }: { productTemplateId?: any; onClose?: () => void }) {
+/** รุ่นรถใน master data (endpoint /api/vehicles/master/models) */
+interface CarModelMaster {
+  car_model_id: number;
+  model_name: string;
+  [key: string]: unknown;
+}
+
+/** ความสัมพันธ์ราคาสินค้าต่อรุ่นรถ (endpoint product-car-model) */
+interface ProductCarModelLink {
+  car_model_id: number;
+  price?: number | string;
+  note?: string;
+  [key: string]: unknown;
+}
+
+/** ค่าที่กำลังแก้อยู่ในตาราง (ก่อนบันทึก) */
+interface EditBufferEntry {
+  price?: number | string;
+  note?: string;
+}
+
+type EditBuffer = Record<number, EditBufferEntry | undefined>;
+
+interface ProductCarModelManagerProps {
+  productTemplateId?: number | string;
+  onClose?: () => void;
+}
+
+function ProductCarModelManager({ productTemplateId, onClose }: ProductCarModelManagerProps) {
   const queryClient = useQueryClient();
-  const [editBuffer, setEditBuffer] = useState<any>({}); // { [car_model_id]: { price, note } }
+  const [editBuffer, setEditBuffer] = useState<EditBuffer>({}); // { [car_model_id]: { price, note } }
   const [error, setError] = useState('');
 
   // Fetch all car models
-  const { data: carModels = [] } = useQuery({
+  const { data: carModels = [] } = useQuery<CarModelMaster[]>({
     queryKey: ['vehicle-master-models'],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/vehicles/master/models`);
@@ -19,7 +48,7 @@ function ProductCarModelManager({ productTemplateId, onClose }: { productTemplat
   });
 
   // Fetch linked car models for this product
-  const { data: linked = [] } = useQuery({
+  const { data: linked = [] } = useQuery<ProductCarModelLink[]>({
     queryKey: ['product-car-model', productTemplateId],
     enabled: !!productTemplateId,
     queryFn: async () => {
@@ -33,7 +62,7 @@ function ProductCarModelManager({ productTemplateId, onClose }: { productTemplat
 
   // Add or update link (save to backend)
   const saveMutation = useMutation({
-    mutationFn: async (car_model_id: any) => {
+    mutationFn: async (car_model_id: number) => {
       const { price, note } = editBuffer[car_model_id] || {};
       await fetch(`${API_URL}/api/products/product-car-model`, {
         method: 'POST',
@@ -42,21 +71,21 @@ function ProductCarModelManager({ productTemplateId, onClose }: { productTemplat
       });
       return car_model_id;
     },
-    onSuccess: (car_model_id: any) => {
-      setEditBuffer((prev: any) => ({ ...prev, [car_model_id]: undefined }));
+    onSuccess: (car_model_id: number) => {
+      setEditBuffer((prev) => ({ ...prev, [car_model_id]: undefined }));
       queryClient.invalidateQueries({ queryKey: ['product-car-model', productTemplateId] });
     },
     onError: () => setError('บันทึกไม่สำเร็จ'),
   });
 
-  const handleSave = (car_model_id: any) => {
+  const handleSave = (car_model_id: number) => {
     setError('');
     saveMutation.mutate(car_model_id);
   };
 
   // Remove link
   const deleteMutation = useMutation({
-    mutationFn: async (car_model_id: any) => {
+    mutationFn: async (car_model_id: number) => {
       await fetch(`${API_URL}/api/products/product-car-model`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -69,7 +98,7 @@ function ProductCarModelManager({ productTemplateId, onClose }: { productTemplat
     onError: () => setError('ลบไม่สำเร็จ'),
   });
 
-  const handleDelete = (car_model_id: any) => {
+  const handleDelete = (car_model_id: number) => {
     setError('');
     deleteMutation.mutate(car_model_id);
   };
@@ -93,22 +122,22 @@ function ProductCarModelManager({ productTemplateId, onClose }: { productTemplat
               </tr>
             </thead>
             <tbody>
-              {linked.map((l: any) => {
+              {linked.map((l: ProductCarModelLink) => {
                 const buffer = editBuffer[l.car_model_id] || {};
                 const price = buffer.price !== undefined ? buffer.price : l.price || '';
                 const note = buffer.note !== undefined ? buffer.note : l.note || '';
                 const isDirty = (buffer.price !== undefined && buffer.price !== l.price) || (buffer.note !== undefined && buffer.note !== l.note);
                 return (
                   <tr key={l.car_model_id}>
-                    <td>{carModels.find((m: any) => m.car_model_id === l.car_model_id)?.model_name || l.car_model_id}</td>
+                    <td>{carModels.find((m: CarModelMaster) => m.car_model_id === l.car_model_id)?.model_name || l.car_model_id}</td>
                     <td>
                       <input
                         type="number"
                         value={price}
                         style={{ width: 90 }}
-                        onChange={(e: any) => {
+                        onChange={(e: FormFieldEvent) => {
                           const val = e.target.value;
-                          setEditBuffer((prev: any) => ({
+                          setEditBuffer((prev) => ({
                             ...prev,
                             [l.car_model_id]: { ...prev[l.car_model_id], price: val }
                           }));
@@ -121,9 +150,9 @@ function ProductCarModelManager({ productTemplateId, onClose }: { productTemplat
                         type="text"
                         value={note}
                         style={{ width: 120 }}
-                        onChange={(e: any) => {
+                        onChange={(e: FormFieldEvent) => {
                           const val = e.target.value;
-                          setEditBuffer((prev: any) => ({
+                          setEditBuffer((prev) => ({
                             ...prev,
                             [l.car_model_id]: { ...prev[l.car_model_id], note: val }
                           }));
@@ -141,7 +170,7 @@ function ProductCarModelManager({ productTemplateId, onClose }: { productTemplat
               <tr>
                 <td colSpan={4}>
                   <select id="add-car-model" style={{ width: 200 }}
-                    onChange={(e: any) => {
+                    onChange={(e: FormFieldEvent) => {
                       const val = e.target.value;
                       if (val) handleSave(Number(val));
                       e.target.value = '';
@@ -149,7 +178,7 @@ function ProductCarModelManager({ productTemplateId, onClose }: { productTemplat
                     disabled={saving}
                   >
                     <option value="">+ เพิ่มรุ่นรถ</option>
-                    {carModels.filter((m: any) => !linked.some((l: any) => l.car_model_id === m.car_model_id)).map((m: any) => (
+                    {carModels.filter((m: CarModelMaster) => !linked.some((l: ProductCarModelLink) => l.car_model_id === m.car_model_id)).map((m: CarModelMaster) => (
                       <option key={m.car_model_id} value={m.car_model_id}>{m.model_name}</option>
                     ))}
                   </select>
