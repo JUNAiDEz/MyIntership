@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 import BlogCard from '../components/Blog/BlogCard';
+import useDebounce from '../hooks/useDebounce';
 import { FaSearch } from 'react-icons/fa';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const STORAGE_KEY = 'gt7_blog_posts';
+const PAGE_SIZE = 9;
 
 interface BlogItem {
   id: number | string;
@@ -33,6 +36,12 @@ interface RawBlog {
   is_published?: boolean;
 }
 
+interface BlogPageResult {
+  items: BlogItem[];
+  total: number;
+  totalPages: number;
+}
+
 const slugify = (title: string | undefined, id: number | string) => {
   return (
     title?.toString()
@@ -56,34 +65,48 @@ const mapBlog = (blog: RawBlog): BlogItem => ({
   slug: blog.slug || slugify(blog.title, blog.id),
 });
 
-const loadFromLocalStorage = (): BlogItem[] => {
+/** fallback: อ่านจาก localStorage แล้วค้นหา/แบ่งหน้าเองฝั่ง client (โหมด degraded เมื่อ API ล่ม) */
+const fallbackFromLocalStorage = (search: string, page: number): BlogPageResult => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const blogs: RawBlog[] = JSON.parse(stored);
-      return blogs.filter((blog) => blog.is_published).map(mapBlog);
+      const q = search.toLowerCase();
+      const filtered = blogs
+        .filter((b) => b.is_published)
+        .filter((b) => !q || `${b.title} ${b.description} ${b.author}`.toLowerCase().includes(q))
+        .sort((a, b) => Number(b.id) - Number(a.id));
+      const total = filtered.length;
+      const items = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(mapBlog);
+      return { items, total, totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
     }
   } catch (error) {
     console.error('Error loading from localStorage:', error);
   }
-  return [];
+  return { items: [], total: 0, totalPages: 1 };
 };
 
-const fetchPublishedBlogs = async (): Promise<BlogItem[]> => {
+const fetchBlogPage = async (search: string, page: number): Promise<BlogPageResult> => {
   try {
-    const response = await fetch(`${API_URL}/api/blog?published=true&limit=1000`, {
+    const params = new URLSearchParams({ published: 'true', page: String(page), limit: String(PAGE_SIZE) });
+    if (search) params.set('search', search);
+    const response = await fetch(`${API_URL}/api/blog?${params.toString()}`, {
       signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result: { success?: boolean; data?: RawBlog[] } = await response.json();
+    const result: { success?: boolean; data?: RawBlog[]; pagination?: { total?: number; totalPages?: number } } = await response.json();
     if (result.success && result.data) {
-      return result.data.map(mapBlog);
+      return {
+        items: result.data.map(mapBlog),
+        total: result.pagination?.total ?? result.data.length,
+        totalPages: result.pagination?.totalPages ?? 1,
+      };
     }
     console.warn('API returned no data, using localStorage');
-    return loadFromLocalStorage();
+    return fallbackFromLocalStorage(search, page);
   } catch (error) {
     console.warn('API unavailable, using localStorage:', error);
-    return loadFromLocalStorage();
+    return fallbackFromLocalStorage(search, page);
   }
 };
 
@@ -100,30 +123,30 @@ function BlogPage({ onLogout }: BlogPageProps) {
     title: 'BLOG | GT7 MOTORSPORT บทความและข่าวสาร',
     description: 'อัปเดตข่าวสารวงการรถยนต์ เทคนิคการแต่งรถ และโปรโมชั่นจาก GT7 Motor',
   };
-  const [blogData, setBlogData] = useState<BlogItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebounce(searchTerm, 400);
+  const isSearching = debouncedSearch.length > 0;
 
-  useEffect(() => {
-    const loadBlogs = async () => {
-      setLoading(true);
-      const blogs = await fetchPublishedBlogs();
-      const sortedBlogs = blogs.sort((a, b) => Number(b.id) - Number(a.id));
-      setBlogData(sortedBlogs);
-      setLoading(false);
-    };
-    loadBlogs();
-  }, []);
+  const { data, isLoading } = useQuery({
+    queryKey: ['blog-public', debouncedSearch, page],
+    queryFn: () => fetchBlogPage(debouncedSearch, page),
+    placeholderData: keepPreviousData,
+  });
 
-  const filteredBlogs = blogData.filter((blog) =>
-    blog.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    blog.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    blog.author?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const items = data?.items ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
-  const isSearching = searchTerm.length > 0;
-  const featuredBlog = !isSearching && filteredBlogs.length > 0 ? filteredBlogs[0] : null;
-  const displayBlogs = isSearching ? filteredBlogs : filteredBlogs.slice(1);
+  // featured (โพสต์ล่าสุด) โชว์เฉพาะหน้าแรกและตอนไม่ค้นหา
+  const showFeatured = page === 1 && !isSearching && items.length > 0;
+  const featuredBlog = showFeatured ? items[0] : null;
+  const displayBlogs = showFeatured ? items.slice(1) : items;
+
+  // เปลี่ยนคำค้น → กลับหน้า 1
+  const onSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
 
   return (
     <>
@@ -149,27 +172,27 @@ function BlogPage({ onLogout }: BlogPageProps) {
                 type="text"
                 placeholder="ค้นหาบทความ..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => onSearchChange(e.target.value)}
                 className="relative z-[52] w-full rounded-md border border-[#444] bg-[#1e1e1e] px-5 py-3.5 pr-[45px] text-base text-white transition-all duration-300 placeholder:text-[#888] focus:border-accent focus:bg-[#252525] focus:shadow-[0_0_15px_rgba(255,199,9,0.15)] focus:outline-none"
               />
               <FaSearch className="absolute right-[15px] top-3 text-[#666]" />
             </div>
           </div>
 
-          {loading && (
+          {isLoading && (
             <div className="rounded-lg border border-dashed border-[#333] bg-[#111] py-20 text-center text-[1.2rem] text-[#888]">
               <p>กำลังโหลดข้อมูล...</p>
             </div>
           )}
 
-          {!loading && filteredBlogs.length === 0 && (
+          {!isLoading && items.length === 0 && (
             <div className="rounded-lg border border-dashed border-[#333] bg-[#111] py-20 text-center text-[1.2rem] text-[#888]">
               <p>ไม่พบบทความที่คุณค้นหา</p>
             </div>
           )}
 
           {/* Featured Post */}
-          {!loading && featuredBlog && (
+          {!isLoading && featuredBlog && (
             <Link to={`/blog/${featuredBlog.slug}`} className="no-underline">
               <div className="group relative z-[1] mb-[70px] h-[450px] cursor-pointer overflow-hidden rounded-xl border border-[#333] shadow-[0_20px_40px_rgba(0,0,0,0.6)] md:h-[500px]">
                 <img src={featuredBlog.imageUrl} alt={featuredBlog.title} className="h-full w-full object-cover transition-transform duration-[600ms] group-hover:scale-[1.03]" />
@@ -188,10 +211,10 @@ function BlogPage({ onLogout }: BlogPageProps) {
           )}
 
           {/* Blog Grid */}
-          {!loading && displayBlogs.length > 0 && (
+          {!isLoading && displayBlogs.length > 0 && (
             <>
               <h3 className="mb-10 border-l-[5px] border-accent pl-5 text-[1.8rem] font-extrabold uppercase tracking-[1px] text-white">
-                {isSearching ? `ผลการค้นหา (${displayBlogs.length})` : 'บทความย้อนหลัง'}
+                {isSearching ? `ผลการค้นหา (${data?.total ?? displayBlogs.length})` : 'บทความย้อนหลัง'}
               </h3>
 
               <div className="grid grid-cols-1 gap-[30px] md:grid-cols-[repeat(auto-fill,minmax(320px,1fr))]">
@@ -201,13 +224,28 @@ function BlogPage({ onLogout }: BlogPageProps) {
                   </div>
                 ))}
               </div>
-
-              {!isSearching && (
-                <div className="mt-[50px] border-t border-[#222] pt-5 text-right text-base font-medium text-[#888]">
-                  Showing {displayBlogs.length} Articles
-                </div>
-              )}
             </>
+          )}
+
+          {/* Pagination */}
+          {!isLoading && totalPages > 1 && (
+            <div className="mt-[50px] flex items-center justify-center gap-4 border-t border-[#222] pt-8">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="rounded-md border border-[#444] bg-[#1e1e1e] px-5 py-2.5 text-sm font-semibold uppercase text-white transition-all hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ก่อนหน้า
+              </button>
+              <span className="text-sm font-medium text-[#888]">หน้า {page} / {totalPages}</span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="rounded-md border border-[#444] bg-[#1e1e1e] px-5 py-2.5 text-sm font-semibold uppercase text-white transition-all hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ถัดไป
+              </button>
+            </div>
           )}
 
         </div>
