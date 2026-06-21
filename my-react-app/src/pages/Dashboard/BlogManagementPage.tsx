@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type * as React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import styles from '../../styles/AdminTheme.module.css';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaStar, FaTimes, FaSearch } from 'react-icons/fa';
 import useDebounce from '../../hooks/useDebounce';
@@ -112,31 +112,35 @@ export default function BlogManagementPage() {
   };
 
   // --- 1. Fetch Data ---
-  const { data: blogs = [], isLoading: loading } = useQuery<BlogItem[]>({
-    queryKey: ['blogs'],
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['blogs', debouncedSearch, page],
     queryFn: async () => {
-      const url = `${API_URL}/api/blog?limit=1000`;
-      const res = await authFetch(url);
+      // published=all → admin เห็นทั้ง published + draft; server-side search + pagination
+      const params = new URLSearchParams({ published: 'all', page: String(page), limit: String(pageSize) });
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      const res = await authFetch(`${API_URL}/api/blog?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch blogs');
-      const result = await res.json() as { success?: boolean; data?: RawBlog[] };
-      if (result.success && result.data) {
-        return result.data.map((blog): BlogItem => ({
-          id: blog.id,
-          title: blog.title,
-          description: blog.description || '',
-          author: blog.author,
-          published_date: blog.published_at || '',
-          imageUrl: blog.image_url || 'https://via.placeholder.com/348x228',
-          slug: blog.slug || slugify(blog.title, blog.id),
-          is_featured: !!blog.is_featured,
-          is_active: !!blog.is_published,
-          categories: blog.categories || [],
-          category_names: blog.categories?.map((c) => c.category_name).join(', ') || '-'
-        }));
-      }
-      return [];
+      const result = await res.json() as { success?: boolean; data?: RawBlog[]; pagination?: { total?: number } };
+      const rows = result.success && result.data ? result.data : [];
+      const items = rows.map((blog): BlogItem => ({
+        id: blog.id,
+        title: blog.title,
+        description: blog.description || '',
+        author: blog.author,
+        published_date: blog.published_at || '',
+        imageUrl: blog.image_url || 'https://via.placeholder.com/348x228',
+        slug: blog.slug || slugify(blog.title, blog.id),
+        is_featured: !!blog.is_featured,
+        is_active: !!blog.is_published,
+        categories: blog.categories || [],
+        category_names: blog.categories?.map((c) => c.category_name).join(', ') || '-'
+      }));
+      return { items, total: result.pagination?.total ?? items.length };
     },
+    placeholderData: keepPreviousData,
   });
+  const blogs = data?.items ?? [];
+  const serverTotal = data?.total ?? 0;
 
   const { data: categories = [] } = useQuery<BlogCategory[]>({
     queryKey: ['blog-categories'],
@@ -161,18 +165,13 @@ export default function BlogManagementPage() {
     ) + (id ? '-' + id : '');
   }
 
-    // --- 2. Filter & Pagination Logic ---
-    const filteredBlogs = blogs.filter((b) => {
-      let catOk = true;
-      if (categoryFilter) {
-        catOk = !!b.categories?.some((c) => (c.blog_category_id || c.category_id) === Number(categoryFilter));
-      }
-      return catOk;
-    });
-
-    const total = filteredBlogs.length;
-    const pageCount = Math.max(1, Math.ceil(total / pageSize));
-    const visible = filteredBlogs.slice((page - 1) * pageSize, page * pageSize);
+    // --- 2. Pagination (server-side) + category filter (client-side บนหน้าปัจจุบัน) ---
+    // หมายเหตุ: blog list endpoint ยังไม่รองรับกรองตามหมวด จึงกรองหมวดเฉพาะรายการในหน้านี้
+    const visible = categoryFilter
+      ? blogs.filter((b) => !!b.categories?.some((c) => (c.blog_category_id || c.category_id) === Number(categoryFilter)))
+      : blogs;
+    const total = serverTotal;
+    const pageCount = Math.max(1, Math.ceil(serverTotal / pageSize));
 
   // --- 3. Actions (Modified for Base64) ---
 

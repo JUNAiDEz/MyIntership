@@ -13,7 +13,10 @@ exports.getAllPosts = async (req, res) => {
     const whereClause = {};
 
     // Filter by published status
-    if (published !== undefined) {
+    // published=all → ไม่กรอง (สำหรับหน้า admin ที่ต้องเห็นทั้ง published + draft)
+    if (published === 'all') {
+      // no filter
+    } else if (published !== undefined) {
       whereClause.is_published = published === 'true' || published === '1';
     } else if (!isAdmin) {
       // Non-admin users can only see published posts

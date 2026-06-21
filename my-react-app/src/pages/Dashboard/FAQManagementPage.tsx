@@ -1,6 +1,7 @@
 import { useState, useMemo, type ChangeEvent } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import type { FormFieldEvent, ModalState } from '@/types';
+import useDebounce from '../../hooks/useDebounce';
 import styles from './ManagementPage.module.css';
 import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import { authFetch } from '@/utils/api';
@@ -29,41 +30,39 @@ interface FaqForm {
   slug: string;
 }
 
-// Helper: Fetch all FAQs from API
-const fetchFaqs = async (): Promise<Faq[]> => {
+// Helper: Fetch FAQs ทีละหน้า (server-side search + pagination) — admin เห็นทั้ง active/inactive
+const fetchFaqPage = async (search: string, page: number, pageSize: number): Promise<{ items: Faq[]; total: number }> => {
   try {
-    const response = await authFetch(`${API_URL}/api/faq?limit=1000`, {
-      signal: AbortSignal.timeout(5000) // 5 second timeout
+    const params = new URLSearchParams({ limit: String(pageSize), offset: String((page - 1) * pageSize) });
+    if (search) params.set('search', search);
+    const response = await authFetch(`${API_URL}/api/faq?${params.toString()}`, {
+      signal: AbortSignal.timeout(5000)
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json() as { success?: boolean; data?: Faq[]; pagination?: { total?: number } };
+    if (result.success && result.data) {
+      return { items: result.data, total: result.pagination?.total ?? result.data.length };
     }
-
-    const result = await response.json() as { success?: boolean; data?: Faq[] };
-    if (result.success) {
-      return result.data ?? [];
-    }
-
-    return [];
+    return { items: [], total: 0 };
   } catch (error) {
     console.error('API error:', error instanceof Error ? error.message : String(error));
-    return [];
+    return { items: [], total: 0 };
   }
 };
 
 export default function FAQManagementPage(){
   const queryClient = useQueryClient();
-  const { data: items = [], isLoading: loading } = useQuery({
-    queryKey: ['faqs'],
-    queryFn: async () => {
-      const faqs = await fetchFaqs();
-      return [...faqs].sort((a: Faq, b: Faq) => a.id - b.id);
-    },
-  });
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [page, setPage] = useState(1);
   const pageSize = 12;
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['faqs', debouncedSearch, page],
+    queryFn: () => fetchFaqPage(debouncedSearch, page, pageSize),
+    placeholderData: keepPreviousData,
+  });
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
   const [modal, setModal] = useState<ModalState<Faq>>({ open: false, mode: 'view', item: null });
 
   // Form state
@@ -116,15 +115,8 @@ export default function FAQManagementPage(){
     onError: () => alert('เกิดข้อผิดพลาดในการเปลี่ยนสถานะ'),
   });
 
-  const filtered = useMemo(() => {
-    if (!search) return items;
-    const q = search.toLowerCase();
-    return items.filter((i: Faq) => `${i.question} ${i.category}`.toLowerCase().includes(q));
-  }, [items, search]);
-
-  const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const visible = items; // server คืนเฉพาะหน้าปัจจุบันแล้ว
 
   const openModal = (mode: ModalState['mode'], item: Faq | null = null) => {
     if (mode === 'create') {
@@ -132,7 +124,7 @@ export default function FAQManagementPage(){
         question: '',
         answer: '',
         category: '',
-        sort_order: items.length,
+        sort_order: total,
         is_active: true,
         slug: ''
       });
