@@ -6,6 +6,7 @@
 ## ✅ ทำในโค้ดแล้ว
 - ย้าย `car-video.mp4` (16MB) จาก `src/` → `public/video/car-video.mp4` (ไม่ฝังใน JS bundle อีก, เสิร์ฟเป็น static)
 - `<video>` ใน HeroSection ใส่ `preload="metadata"` + `poster="/images/cars/gtr.png"` → โชว์รูปทันที ไม่บล็อกการ render ระหว่างวิดีโอโหลด
+- **แปลงรูปเป็น WebP ตอน upload แล้ว** (`node-backend/src/modules/system/upload.controller.js` ใช้ `sharp().webp({quality:80})`, animated:true) → รูปใหม่ทุกไฟล์เป็น `.webp` ลดขนาด ~50-70% (เหลือแค่ batch แปลงของเก่าใน DB + ย้ายขึ้น CDN)
 
 ## ⬜ ขั้นตอนย้ายไป CDN (ทำบน AWS / Cloudflare)
 
@@ -28,14 +29,14 @@
 2. สร้าง CloudFront distribution ชี้ไป bucket (เปิด gzip/brotli + cache)
 3. ใช้ env `VITE_CDN_URL` แบบเดียวกับ A
 
-## ⬜ รูปภาพ → WebP + responsive
-ปัจจุบันรูปเก็บเป็น absolute URL ใน DB (`apigame.gt7dev.com/uploads/...`) เป็น JPG/PNG
-1. ตอน **upload** (backend `upload.controller.js`): แปลงเป็น WebP ด้วย `sharp`
+## รูปภาพ → WebP + responsive
+ปัจจุบันรูปเก็บเป็น absolute URL ใน DB (`apigame.gt7dev.com/uploads/...`)
+1. ✅ **ทำแล้ว** — ตอน upload (`upload.controller.js`) แปลงเป็น WebP ด้วย `sharp`:
    ```js
    const sharp = require('sharp');
-   await sharp(file.buffer).webp({ quality: 80 }).toFile(outPath);
+   await sharp(file.buffer, { animated: true }).webp({ quality: 80 }).toFile(outPath);
    ```
-   ลดขนาดรูป 50-70%
+   ลดขนาดรูป 50-70% (รูปใหม่ทุกไฟล์เป็น `.webp` แล้ว)
 2. สร้างหลายขนาด (เช่น 400/800/1600px) แล้วใช้ `srcSet` + `sizes` ที่ `<img>` → browser โหลดขนาดเหมาะกับจอ
 3. ใส่ `loading="lazy"` + `width`/`height` ที่ `<img>` ทุกตัว (ลด CLS) — ส่วนใหญ่ใส่แล้วตอน migrate
 4. ของเก่าใน DB: เขียน script แปลง batch แล้วอัปเดต URL (หรือทำ on-the-fly ผ่าน image CDN เช่น Cloudflare Images / imgix)

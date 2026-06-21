@@ -73,11 +73,15 @@
   - ข้าม (ไม่ใช่ list CRUD): `ServiceMenuPage` (static), `ServicePreviewManagementPage` (config object), `ContactManagementPage` (writes เป็น mock)
   - ⚠️ ต้องทดสอบใน admin UI จริง (login /dashboard → กดเพิ่ม/แก้/ลบ/toggle) ว่า list อัปเดตถูก โดยเฉพาะ ProductManagement (manage-modal), Promotion (item picker), Sticker (upload+canvas)
 
+## ✅ ทำไปแล้ว (2026-06-21 รอบสอง — branch `Refactor`)
+- **TypeScript `any` = 0 ทั้ง frontend** (จาก ~1257 จุด) — แทนด้วย type จริง/local interface/`unknown`+guard; เพิ่ม type กลางใน `@/types` (ServicePricingGroup, AdminBrand, PricingRow ฯลฯ) + `@types/google.maps`; strict:true จับบั๊กได้เต็ม ไม่มีรูรั่ว type
+- **WebP ตอน upload** — `upload.middleware` ใช้ multer memoryStorage, `upload.controller` แปลงด้วย `sharp().webp({quality:80})` (animated:true รองรับ gif) เขียน `.webp` ลง public/uploads (response shape เดิม) → ลดขนาดรูป ~50-70%
+- **Server-side pagination + search (หน้า public)** — `BlogPage` (debounce search + page, limit 9), `FAQPage` (category + offset, limit 12) ใช้ React Query `keepPreviousData`; เลิกโหลด `limit=1000` แล้ว filter client-side (backend รองรับ param อยู่แล้ว)
+
 ## ยังเหลือ (ต้องตัดสินใจ/ใช้ทรัพยากรภายนอก)
 - **ลบ index ซ้ำ** BlogPosts(64)/Faqs(34) จาก alter:true เก่า → `scripts/dedup-indexes.js` (รันเอง: `! node node-backend/scripts/dedup-indexes.js` — ระบบบล็อกไม่ให้ AI drop index บน prod)
-- **Dashboard → React Query**: ต้องทำ query+mutation+invalidate ต่อหน้า (ระวัง stale หลัง CRUD) — ทำทีละหน้าอย่างระมัดระวัง ไม่ควร bulk
-- **car-video/รูป → S3/CloudFront จริง** (ดู CDN_MEDIA_GUIDE) + WebP ตอน upload
-- **Pagination จริง** (FAQ/Blog): เป็น feature ที่ต้องมี server-side search ด้วย (BlogPage search เป็น client-side) — perf ปัจจุบันบรรเทาด้วย index+gzip แล้ว
+- **car-video/รูป → S3/CloudFront จริง** (ดู CDN_MEDIA_GUIDE) — WebP ตอน upload ✅ แล้ว (เหลือ batch แปลงของเก่าใน DB + ย้ายขึ้น CDN)
+- **Server-side pagination หน้า admin** (FAQ/Blog management ยัง paginate client-side `limit=1000`) — ควรทดสอบ CRUD จริงก่อนแปลง; blog admin ต้องเห็น draft (controller กรอง is_published สำหรับ non-admin ต้องปรับ)
 
 ## ลำดับแนะนำให้เริ่ม
 1. **ข้อ 4 (code-split)** — ทำได้ทันทีในโค้ดปัจจุบัน เห็นผลเร็ว ไม่ต้องแตะ infra

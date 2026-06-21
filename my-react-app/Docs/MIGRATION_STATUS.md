@@ -10,10 +10,13 @@
 | `.ts` | 8 |
 | **`.jsx` ที่เหลือ** | **0** ✅ |
 | **`.js` ที่เหลือ** | **0** ✅ |
-| `.module.css` ที่เหลือ | 25 |
+| `.module.css` ที่เหลือ | **12** (ตั้งใจเก็บ — shared/animation, ดูด้านล่าง) |
+| **`any` ที่เหลือ** | **0** ✅ (จาก ~1257) |
 
-- `npm run typecheck` ✅ ผ่านสะอาด | `npm run build` ✅ เขียว
+- `npm run typecheck` ✅ ผ่านสะอาด | `npm run build` ✅ เขียว | `strict: true`
 - ทุกไฟล์ใน `src/` เป็น TypeScript แล้ว (รวม `App.tsx`, `main.tsx`, `index.html` ชี้ `main.tsx`)
+- **`any` = 0 ทั้ง frontend** — แทนด้วย type จริง/local interface/`unknown`+guard (+ type กลางใน `@/types`, `@types/google.maps`)
+- งานหลังจากนี้ commit ลง branch **`Refactor`** (ไม่ใช่ `main`)
 
 ### เฟส 3 — Tailwind cleanup (เสร็จตามขอบเขตที่ตกลง)
 - ลบ **dead CSS 4 ไฟล์** (LiveStream/ProductSupplier/ServicePricing/StickerDashboard)
@@ -28,10 +31,12 @@
 slick `:global` ที่ย้ายเข้า `index.css`: `.product-carousel`, `.poster-carousel`, `.shop-banner-slider`, `.promo-flash-slider`
 keyframes ใน `index.css @theme`: slide-down(+20), modal-in, slide-in-left/right, zoom-in, fade-in(+down/header), slide-up, fade-in-left
 
-### งานที่เหลือ (เฟส 3 ส่วน Tailwind — optional)
-ยังมี **25 `.module.css`** ที่เก็บไว้ (component/หน้าที่แปลงแบบ TS-only เพราะ CSS ซับซ้อน เช่น
-animation, slick `:global`, light-mode, AdminTheme/ServicePageLayout ที่ shared, Dashboard CRUD).
-ถ้าต้องการ Tailwind 100% ค่อยทยอยแปลง `.module.css` เหล่านี้ทีหลัง + เปิด `strict:true` + Tailwind preflight
+### 12 `.module.css` ที่เหลือ = ตัดสินใจ "เก็บไว้ถาวร" (2026-06-21)
+ทบทวนแล้วตัดสินใจ **ไม่แปลง** เพราะแปลงแล้วแย่กว่าเดิม:
+- **shared design-system (6):** `AdminTheme`(29 importers), `ServicePageLayout`(25), `Dashboard`, `ManagementPage`×2, `ProductManagementPage` → แปลง = inline utility ลง 50+ ไฟล์ เสีย single source of truth
+- **animation/effect (5):** `Loader`, `ThemeSwitch`, `AgentChatBot`, `ServiceBanner`(slick), `CarColorChanger`(CSS mask) → keyframes/mask ไม่เหมาะเป็น utility
+- **(1):** `VehicleModelsPage` → ระบบ dual light/dark theme
+> ไม่ใช่ "ยังไม่ได้แปลง" แต่เป็นสถาปัตยกรรมที่ตั้งใจ — Tailwind ครอบคลุมส่วนที่เหมาะสมครบแล้ว
 
 > 🎉 **`components/` = TS 100%** | **หน้าสาธารณะ (pages/ root) = TS 100% (14/14)** ✅
 > ✅ Tailwind: Home, FAQ(+Detail), Contact, Blog(+Detail), Promotion**Detail**, Portfolio(+Detail)
