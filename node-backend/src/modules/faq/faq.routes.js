@@ -1,24 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const faqController = require('./faq.controller');
-router.get('/slug/:slug', faqController.getFaqBySlug);
-// const { protect, adminOnly } = require('../../middleware/auth');
+const { verifyToken, checkRole } = require('../../middleware/auth');
 
-// Public routes
+// admin guard ใช้ซ้ำ (ต้อง login + role ทีมงาน)
+const ADMIN = [verifyToken, checkRole(['HighestAdmin', 'Admin', 'Manager'])];
+
+router.get('/slug/:slug', faqController.getFaqBySlug);
+
+// Public routes (อ่านได้ทุกคน)
 router.get('/categories', faqController.getCategories);
 router.get('/:id', faqController.getFaqById);
 router.get('/', faqController.getAllFaqs);
 
-// Admin routes (uncomment when auth is ready)
-// router.post('/', protect, adminOnly, faqController.createFaq);
-// router.put('/:id', protect, adminOnly, faqController.updateFaq);
-// router.delete('/:id', protect, adminOnly, faqController.deleteFaq);
-// router.patch('/:id/toggle-active', protect, adminOnly, faqController.toggleActive);
-
-// Temporary routes without auth for development
-router.post('/', faqController.createFaq);
-router.put('/:id', faqController.updateFaq);
-router.delete('/:id', faqController.deleteFaq);
-router.patch('/:id/toggle-active', faqController.toggleActive);
+// Admin routes (ต้อง auth)
+router.post('/', ADMIN, faqController.createFaq);
+router.put('/:id', ADMIN, faqController.updateFaq);
+router.delete('/:id', ADMIN, faqController.deleteFaq);
+router.patch('/:id/toggle-active', ADMIN, faqController.toggleActive);
 
 module.exports = router;

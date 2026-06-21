@@ -1,20 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const stickerCarController = require('./stickerCar.controller');
+const { verifyToken, checkRole } = require('../../middleware/auth');
 
-// Get all sticker cars
+const ADMIN = [verifyToken, checkRole(['HighestAdmin', 'Admin', 'Manager'])];
+
+// Public reads (หน้า Sticker สาธารณะใช้แสดงรถ)
 router.get('/', stickerCarController.getAllCars);
-
-// Get single sticker car by ID
 router.get('/:id', stickerCarController.getCarById);
 
-// Create new sticker car
-router.post('/', stickerCarController.createCar);
-
-// Update sticker car
-router.put('/:id', stickerCarController.updateCar);
-
-// Delete sticker car
-router.delete('/:id', stickerCarController.deleteCar);
+// Admin writes (ต้อง auth)
+router.post('/', ADMIN, stickerCarController.createCar);
+router.put('/:id', ADMIN, stickerCarController.updateCar);
+router.delete('/:id', ADMIN, stickerCarController.deleteCar);
 
 module.exports = router;

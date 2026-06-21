@@ -4,6 +4,9 @@ import type { FormFieldEvent } from '@/types';
 import styles from './ProductManagementPage.module.css';
 import { API_URL } from '../../utils/api';
 
+const getToken = () => localStorage.getItem('adminToken');
+const authHeaders = (): Record<string, string> => ({ Authorization: `Bearer ${getToken()}` });
+
 /** รุ่นรถใน master data (endpoint /api/vehicles/master/models) */
 interface CarModelMaster {
   car_model_id: number;
@@ -66,7 +69,7 @@ function ProductCarModelManager({ productTemplateId, onClose }: ProductCarModelM
       const { price, note } = editBuffer[car_model_id] || {};
       await fetch(`${API_URL}/api/products/product-car-model`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ product_template_id: productTemplateId, car_model_id, price, note })
       });
       return car_model_id;
@@ -88,7 +91,7 @@ function ProductCarModelManager({ productTemplateId, onClose }: ProductCarModelM
     mutationFn: async (car_model_id: number) => {
       await fetch(`${API_URL}/api/products/product-car-model`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ product_template_id: productTemplateId, car_model_id })
       });
     },

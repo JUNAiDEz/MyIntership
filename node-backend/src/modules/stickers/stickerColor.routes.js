@@ -1,23 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const stickerColorController = require('./stickerColor.controller');
+const { verifyToken, checkRole } = require('../../middleware/auth');
 
-// Get all sticker colors
+const ADMIN = [verifyToken, checkRole(['HighestAdmin', 'Admin', 'Manager'])];
+
+// Public reads (หน้า Sticker สาธารณะใช้แสดงสี)
 router.get('/', stickerColorController.getAllColors);
-
-// Get single sticker color by ID
 router.get('/:id', stickerColorController.getColorById);
 
-// Create new sticker color
-router.post('/', stickerColorController.createColor);
-
-// Update sticker color
-router.put('/:id', stickerColorController.updateColor);
-
-// Delete sticker color
-router.delete('/:id', stickerColorController.deleteColor);
-
-// Update display order for multiple colors
-router.put('/reorder', stickerColorController.updateDisplayOrder);
+// Admin writes (ต้อง auth)
+router.post('/', ADMIN, stickerColorController.createColor);
+// reorder ต้องมาก่อน /:id เพื่อไม่ให้ถูกจับเป็น id='reorder'
+router.put('/reorder', ADMIN, stickerColorController.updateDisplayOrder);
+router.put('/:id', ADMIN, stickerColorController.updateColor);
+router.delete('/:id', ADMIN, stickerColorController.deleteColor);
 
 module.exports = router;

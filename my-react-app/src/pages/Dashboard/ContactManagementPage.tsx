@@ -5,6 +5,9 @@ import { FaEye, FaTrash, FaCheckCircle, FaEnvelopeOpen, FaSearch } from 'react-i
 import { API_URL } from '../../utils/api'; // ใช้ API Config กลาง
 import { HasPermission } from '../../utils/ProtectedRoute';
 
+const getToken = () => localStorage.getItem('adminToken');
+const authHeaders = (): Record<string, string> => ({ Authorization: `Bearer ${getToken()}` });
+
 /** สถานะของข้อความติดต่อ */
 type ContactStatus = 'Pending' | 'Read' | 'Replied';
 
@@ -51,7 +54,7 @@ export default function ContactManagementPage() {
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/contact?limit=1000`);
+      const response = await fetch(`${API_URL}/api/contact?limit=1000`, { headers: authHeaders() });
 
       // กรณี Backend ยังไม่พร้อม ให้ใช้ Mock Data
       if (!response.ok) {
@@ -83,7 +86,7 @@ export default function ContactManagementPage() {
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/contact/stats`);
+      const response = await fetch(`${API_URL}/api/contact/stats`, { headers: authHeaders() });
       if (response.ok) {
         const result = await response.json() as { success?: boolean; data?: ContactStats };
         if (result.success && result.data) {

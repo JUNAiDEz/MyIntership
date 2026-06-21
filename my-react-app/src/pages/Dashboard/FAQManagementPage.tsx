@@ -6,6 +6,8 @@ import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 
 // API endpoint
 const API_URL = import.meta.env.VITE_API_URL;
+const getToken = () => localStorage.getItem('adminToken');
+const authHeaders = (): Record<string, string> => ({ Authorization: `Bearer ${getToken()}` });
 
 /** หนึ่งรายการ FAQ ตาม field จริงจาก backend */
 interface Faq {
@@ -87,7 +89,7 @@ export default function FAQManagementPage(){
       });
       const isEdit = modal.mode === 'edit';
       const url = isEdit ? `${API_URL}/api/faq/${modal.item?.id}` : `${API_URL}/api/faq`;
-      const res = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body });
+      const res = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body });
       if (!res.ok) throw new Error('Failed to save FAQ');
       return res.json();
     },
@@ -97,7 +99,7 @@ export default function FAQManagementPage(){
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_URL}/api/faq/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/faq/${id}`, { method: 'DELETE', headers: authHeaders() });
       if (!res.ok) throw new Error('Failed to delete FAQ');
       return res.json();
     },
@@ -107,7 +109,7 @@ export default function FAQManagementPage(){
 
   const toggleMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_URL}/api/faq/${id}/toggle-active`, { method: 'PATCH' });
+      const res = await fetch(`${API_URL}/api/faq/${id}/toggle-active`, { method: 'PATCH', headers: authHeaders() });
       if (!res.ok) throw new Error('Failed to toggle status');
       return res.json();
     },

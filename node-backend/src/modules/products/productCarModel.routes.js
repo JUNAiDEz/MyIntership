@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const productCarModelController = require('./productCarModel.controller');
+const { verifyToken, checkRole } = require('../../middleware/auth');
 
-// เพิ่มหรืออัปเดตความสัมพันธ์สินค้า-รุ่นรถ
-router.post('/product-car-model', productCarModelController.addOrUpdateProductCarModel);
+const ADMIN = [verifyToken, checkRole(['HighestAdmin', 'Admin', 'Manager'])];
 
-// ลบความสัมพันธ์สินค้า-รุ่นรถ
-router.delete('/product-car-model', productCarModelController.deleteProductCarModel);
+// เพิ่มหรืออัปเดตความสัมพันธ์สินค้า-รุ่นรถ (ต้อง auth)
+router.post('/product-car-model', ADMIN, productCarModelController.addOrUpdateProductCarModel);
+
+// ลบความสัมพันธ์สินค้า-รุ่นรถ (ต้อง auth)
+router.delete('/product-car-model', ADMIN, productCarModelController.deleteProductCarModel);
 
 // ดึงรุ่นรถที่ผูกกับสินค้า
 router.get('/product-car-model/by-product/:product_template_id', productCarModelController.getCarModelsByProduct);
