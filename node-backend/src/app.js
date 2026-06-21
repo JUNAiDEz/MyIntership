@@ -3,6 +3,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
 const helmet = require('helmet');
+const compression = require('compression');
 
 const db = require('./models'); 
 const apiRoutes = require('./modules');
@@ -27,6 +28,9 @@ app.use(cors({
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
+
+// ✅ 2.5 Gzip compression — ลดขนาด response (JSON/HTML) ก่อนส่ง
+app.use(compression());
 
 // Request Logging
 if (process.env.NODE_ENV === 'development') {
@@ -85,36 +89,19 @@ const initializeDatabase = async () => {
     try {
         await db.sequelize.authenticate();
 
-        // 🔥 แก้ไขชั่วคราว: บังคับให้เป็น { alter: true } ไปเลยเพื่ออัปเดตฐานข้อมูล
-        const syncOptions = { alter: true }; 
-        
-        // ✅ 3. สร้างเฉพาะตาราง BlogPosts (ถ้ายังไม่มี)
-        if (db.BlogPost) {
-            await db.BlogPost.sync(syncOptions);
-            console.log("✅ BlogPost table synced and altered!");
+        // ⚙️ รัน sync/alter เฉพาะเมื่อสั่ง DB_SYNC=true เท่านั้น
+        // บน production ควรเป็น false (boot เร็วขึ้น + ไม่เสี่ยง alter schema โดยไม่ตั้งใจ — ใช้ migration แทน)
+        if (process.env.DB_SYNC === 'true') {
+            const syncOptions = { alter: true };
+            const tablesToSync = ['BlogPost', 'Faq', 'ContactMessage', 'ServiceBanner', 'ServiceButton'];
+            for (const name of tablesToSync) {
+                if (db[name]) await db[name].sync(syncOptions);
+            }
+            console.log('✅ DB_SYNC=true → synced/altered:', tablesToSync.filter((n) => db[n]).join(', '));
+        } else {
+            console.log('ℹ️  DB_SYNC ไม่ได้เปิด — ข้ามการ sync/alter (ใช้ schema เดิม)');
         }
 
-        // ✅ 4. สร้างเฉพาะตาราง Faqs (ถ้ายังไม่มี)
-        if (db.Faq) {
-            await db.Faq.sync(syncOptions);
-        }
-
-        // ✅ 5. สร้างเฉพาะตาราง ContactMessages (ถ้ายังไม่มี)
-        if (db.ContactMessage) {
-            await db.ContactMessage.sync(syncOptions);
-        }
-
-        // ✅ 6. สร้างเฉพาะตาราง ServiceBanners & ServiceButtons (ถ้ายังไม่มี)
-        if (db.ServiceBanner) {
-            await db.ServiceBanner.sync(syncOptions);
-        }
-        if (db.ServiceButton) {
-            await db.ServiceButton.sync(syncOptions);
-        }
-
-        // Comment ไว้ก่อน เพราะมีปัญหากับตาราง Users
-        // await db.sequelize.sync({ alter: false }); // ปิดการ Sync อัตโนมัติทั้งหมด
-        
     } catch (error) {
         console.error('❌ Database connection failed:', error);
         throw error;

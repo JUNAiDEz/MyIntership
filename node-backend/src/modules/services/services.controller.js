@@ -502,6 +502,56 @@ const {
 } = db;
 const { Op } = require('sequelize');
 
+// --- ดึงราคาบริการ "ทุกชนิด" ของรถรุ่นเดียว ด้วย query เดียว ---
+// แทนการยิง 18 endpoint แล้วมา filter ฝั่ง client (ลดเหลือ 1 request)
+// GET /api/services/pricing/by-car-model/:carModelId
+exports.getPricingByCarModel = async (req, res) => {
+  try {
+    const { carModelId } = req.params;
+    if (!carModelId) return res.status(400).json({ message: 'carModelId is required' });
+
+    const pricings = await ServicePricing.findAll({
+      where: { car_model_id: carModelId, is_active: true },
+      include: [
+        {
+          model: Service,
+          attributes: ['service_id', 'service_name', 'slug'],
+          required: true,
+          include: [{ model: ServiceImage, as: 'images', attributes: ['image_url'], required: false }],
+        },
+        {
+          model: CarModel,
+          as: 'CarModel',
+          attributes: ['car_model_id', 'model_name', 'image_url', 'slug'],
+          required: false,
+        },
+      ],
+    });
+
+    // คืนรูปแบบ flat ให้ frontend ใช้ได้ทันที (stage/name/price/service_slug/service_img/car_model_id)
+    const result = pricings.map((p) => {
+      const svc = p.Service || {};
+      const serviceImg = (svc.images && svc.images[0] && svc.images[0].image_url) || '';
+      return {
+        id: `${p.service_id}-${p.car_model_id}`,
+        car_model_id: p.car_model_id,
+        service_id: p.service_id,
+        price: Number(p.price),
+        note: p.note || '',
+        stage: svc.service_name || '',
+        name: svc.service_name || '',
+        service_slug: svc.slug || '',
+        slug: svc.slug || '',
+        service_img: serviceImg,
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // --- 1. ดึงข้อมูลราคาบริการ Pipe Clean (Group by Brand) ---
 exports.getPipeCleanPricing = async (req, res) => {
   try {

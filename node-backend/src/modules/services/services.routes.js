@@ -49,6 +49,9 @@ router.get('/upgrade/pricing', servicesController.getUpgradePricing);
 router.get('/custom-exhaust/pricing', servicesController.getCustomExhaustPricing);
 router.get('/remap/pricing', servicesController.getRemapPricing);
 
+// 🚀 รวมราคาบริการทุกชนิดของรถรุ่นเดียว (query เดียว แทนการยิง 18 endpoint)
+router.get('/pricing/by-car-model/:carModelId', servicesController.getPricingByCarModel);
+
 
 // 2. Public List & Detail
 router.get('/', servicesController.getAllServices);
