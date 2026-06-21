@@ -151,3 +151,26 @@ router.delete(
   checkPermission('cars', 'delete'), 
   carsController.deleteModel
 );
+
+---
+
+## 5. Route Auth Coverage — สถานะจริง (อัปเดต 2026-06-21)
+
+มี middleware 2 แบบใน `middleware/auth.js`:
+- **`checkRole([...])`** — เช็คแค่ role claim ใน JWT (ไม่ query DB) เหมาะกับ content/CMS
+- **`checkPermission(resource, action)`** — เช็คสิทธิ์ละเอียดจาก DB เหมาะกับ ERP core
+
+### Modules ที่ใช้ `verifyToken + checkRole(['HighestAdmin','Admin','Manager'])` บน write
+ใส่ที่ POST/PUT/PATCH/DELETE ทั้งหมด ส่วน GET ยัง **public** (ยกเว้น contact ที่ GET ก็ต้อง auth เพราะเป็น PII):
+`faq`, `blog`, `contact`, `dealers`, `stickers/cars`, `stickers/colors`, `products/product-car-model`
+
+> ก่อนหน้านี้ route เหล่านี้เปิดโล่ง (comment `// Temporary routes without auth for development`) — ปิดช่องโหว่แล้ว
+
+### Modules ที่ใช้ `checkPermission` (ละเอียด)
+`inventory`, `services`, `vehicles`, `sales`, `portfolio`, `carWrap`, `system`, `auth` (จัดการ role/permission/user)
+
+### ⚠️ ข้อกำหนดฝั่ง Frontend
+หน้า admin ต้องแนบ `Authorization: Bearer <token>` โดย token เก็บที่ `localStorage.adminToken` (ตั้งตอน login ใน `LoginModal`) — JWT payload มี `role = role.role_name` ดังนั้น **role ใน DB ต้องเป็นหนึ่งใน** `HighestAdmin` / `Admin` / `Manager` ไม่งั้นโดน 403 (ถ้าใช้ชื่อ role อื่น ต้องแก้ array ใน `checkRole([...])`)
+
+### หมายเหตุ rate limiting
+`/auth/login` และ `/auth/register` มี `express-rate-limit` (10 ครั้ง/15 นาที/IP) — ตั้ง `app.set('trust proxy', 1)` ใน `app.js` แล้วเพื่อให้ `req.ip` ถูกต้องหลัง nginx
