@@ -1,27 +1,9 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
-// ตรวจสอบว่ามีโฟลเดอร์ uploads ไหม ถ้าไม่มีให้สร้าง
-// ใช้ __dirname/../../public/uploads แทน __dirname/../public/uploads
-const uploadDir = path.join(__dirname, '../../../public/uploads'); // ขึ้น 3 ระดับจาก src/modules/system
-
-if (!fs.existsSync(uploadDir)){
-    fs.mkdirSync(uploadDir, { recursive: true });
-} else {
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir); // เก็บไฟล์ที่โฟลเดอร์ public/uploads
-  },
-  filename: (req, file, cb) => {
-    // เปลี่ยนชื่อไฟล์เป็น: fieldname-timestamp.นามสกุล (ป้องกันชื่อซ้ำ)
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
-    cb(null, filename);
-  }
-});
+// เก็บไฟล์ไว้ใน memory ก่อน แล้วให้ controller แปลงเป็น WebP ด้วย sharp ก่อนเขียนลงดิสก์
+// (ลดขนาดไฟล์ + ไม่ต้องเขียนไฟล์ต้นฉบับทิ้งภายหลัง)
+const storage = multer.memoryStorage();
 
 // ตัวกรองไฟล์ (รับเฉพาะรูปภาพ)
 const fileFilter = (req, file, cb) => {
@@ -36,7 +18,7 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // จำกัดขนาด 5MB
   fileFilter: fileFilter
